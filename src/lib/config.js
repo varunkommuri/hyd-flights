@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS = {
   forceDemo: false,         // show simulated data even when a key is set
   followed: null,           // id of the flight the user follows
   haptics: true,
+  theme: 'system',          // system | light | dark
 };
 
 export function loadSettings() {

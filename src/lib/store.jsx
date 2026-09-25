@@ -44,6 +44,20 @@ export function AppProvider({ children }) {
     setSettings((s) => { const n = { ...s, ...patch }; saveSettings(n); return n; });
   }, []);
 
+  // ---- light / dark theme ----
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: light)');
+    const apply = () => {
+      const t = settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : mq?.matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#EEF2FF' : '#070B22');
+    };
+    apply();
+    if (settings.theme !== 'system' || !mq) return;
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [settings.theme]);
+
   const notify = useCallback((msg, tone = 'info') => {
     setToast({ msg, tone, id: Date.now() });
   }, []);

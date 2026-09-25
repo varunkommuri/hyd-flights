@@ -81,7 +81,7 @@ export default function FlightDetail({ id }) {
             {prog > 0 && <path d={`M${P0} Q${P1} ${P2}`} fill="none" stroke="var(--orange)" strokeWidth="2.6" pathLength="1" strokeDasharray={`${prog} 1`} />}
             <circle cx={P0[0]} cy={P0[1]} r="5" fill="var(--orange)" />
             <circle cx={P2[0]} cy={P2[1]} r="5" fill="none" stroke="var(--orange)" strokeWidth="2" />
-            {inAir && <g transform={`translate(${px} ${py}) rotate(${(tang * 180) / Math.PI + 90})`}><path d="M0-9 2 -2 9 2v2l-7-2 -.5 5 2.5 2v1.5L0 9.5-3 10.5V9l2.5-2-.5-5-7 2v-2l7-4z" fill="#fff" /></g>}
+            {inAir && <g transform={`translate(${px} ${py}) rotate(${(tang * 180) / Math.PI + 90})`}><path d="M0-9 2 -2 9 2v2l-7-2 -.5 5 2.5 2v1.5L0 9.5-3 10.5V9l2.5-2-.5-5-7 2v-2l7-4z" fill="var(--ink)" /></g>}
           </svg>
           <div className="rt-end right"><b>{toCode}</b><span>{toCity}</span></div>
         </div>

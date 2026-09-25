@@ -84,6 +84,18 @@ export default function Settings() {
       </section>
 
       <section className="glass card">
+        <div className="kicker">Appearance</div>
+        <div className="set-row">
+          <span>Theme</span>
+          <div className="seg-mini">
+            {[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => (
+              <button key={k} className={settings.theme === k ? 'on' : ''} onClick={() => update({ theme: k })}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="glass card">
         <div className="kicker">Live flight schedule</div>
         <p className="body">Arrivals, departures, gates and aircraft types come from <b>AeroDataBox</b>. Get a free key at <a href="https://rapidapi.com/aedbx-aedbx/api/aerodatabox" target="_blank" rel="noreferrer">rapidapi.com → AeroDataBox</a> (subscribe to the Basic plan), then paste it here.</p>
         <label className="field">

@@ -201,14 +201,14 @@ function Radar({ aircraft }) {
         <radialGradient id="radarBg"><stop offset="0" stopColor="rgba(80,130,255,.28)" /><stop offset="1" stopColor="rgba(20,30,80,.1)" /></radialGradient>
         <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="rgba(124,182,255,0)" /><stop offset="1" stopColor="rgba(124,182,255,.45)" /></linearGradient>
       </defs>
-      <circle cx={c} cy={c} r={c - 2} fill="url(#radarBg)" stroke="rgba(150,180,255,.35)" />
-      {[0.33, 0.66].map((k) => <circle key={k} cx={c} cy={c} r={(c - 2) * k} fill="none" stroke="rgba(150,180,255,.2)" />)}
-      <line x1={c} y1="4" x2={c} y2={size - 4} stroke="rgba(150,180,255,.15)" />
-      <line x1="4" y1={c} x2={size - 4} y2={c} stroke="rgba(150,180,255,.15)" />
+      <circle cx={c} cy={c} r={c - 2} fill="url(#radarBg)" stroke="var(--grid-hi)" />
+      {[0.33, 0.66].map((k) => <circle key={k} cx={c} cy={c} r={(c - 2) * k} fill="none" stroke="var(--grid)" />)}
+      <line x1={c} y1="4" x2={c} y2={size - 4} stroke="var(--grid)" />
+      <line x1="4" y1={c} x2={size - 4} y2={c} stroke="var(--grid)" />
       <g className="sweep" style={{ transformOrigin: `${c}px ${c}px` }}>
         <path d={`M${c} ${c} L${c} 2 A${c - 2} ${c - 2} 0 0 1 ${c + (c - 2) * Math.sin(Math.PI / 4)} ${c - (c - 2) * Math.cos(Math.PI / 4)} Z`} fill="url(#sweep)" />
       </g>
-      <rect x={c - 5} y={c - 1.5} width="10" height="3" rx="1" fill="#fff" opacity=".85" />
+      <rect x={c - 5} y={c - 1.5} width="10" height="3" rx="1" fill="var(--ink)" opacity=".85" />
       {aircraft.filter((a) => a.cls !== 'gnd').map((a) => {
         const d = distKm(HYD, a);
         if (d > R) return null;
