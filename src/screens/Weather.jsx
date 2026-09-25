@@ -107,10 +107,10 @@ function Tile({ icon, label, value }) {
 function Compass({ dir, rwy }) {
   return (
     <svg viewBox="0 0 120 120" width="124" height="124" className="compass" aria-label={`Wind from ${dir} degrees`}>
-      <circle cx="60" cy="60" r="54" fill="rgba(255,255,255,.04)" stroke="rgba(160,180,255,.3)" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="54" fill="var(--ink-faint)" stroke="var(--grid-hi)" strokeWidth="1.5" />
       {Array.from({ length: 36 }, (_, i) => {
         const a = (i * 10 * Math.PI) / 180, r1 = i % 9 === 0 ? 44 : 48;
-        return <line key={i} x1={60 + Math.sin(a) * r1} y1={60 - Math.cos(a) * r1} x2={60 + Math.sin(a) * 52} y2={60 - Math.cos(a) * 52} stroke="rgba(180,195,255,.35)" strokeWidth={i % 9 === 0 ? 2 : 1} />;
+        return <line key={i} x1={60 + Math.sin(a) * r1} y1={60 - Math.cos(a) * r1} x2={60 + Math.sin(a) * 52} y2={60 - Math.cos(a) * 52} stroke="var(--grid-hi)" strokeWidth={i % 9 === 0 ? 2 : 1} />;
       })}
       {['N', 'E', 'S', 'W'].map((t, i) => {
         const a = (i * 90 * Math.PI) / 180;
@@ -118,13 +118,13 @@ function Compass({ dir, rwy }) {
       })}
       {/* runway */}
       <g transform={`rotate(${rwy - 90} 60 60)`}>
-        <rect x="30" y="56" width="60" height="8" rx="2" fill="rgba(255,255,255,.18)" />
-        <line x1="34" y1="60" x2="86" y2="60" stroke="rgba(255,255,255,.6)" strokeDasharray="4 3" />
+        <rect x="30" y="56" width="60" height="8" rx="2" fill="var(--ink-soft)" />
+        <line x1="34" y1="60" x2="86" y2="60" stroke="var(--ink-mid)" strokeDasharray="4 3" />
       </g>
       {/* wind arrow: points where the wind blows TO */}
       <g transform={`rotate(${dir} 60 60)`} className="cmp-arrow">
-        <line x1="60" y1="14" x2="60" y2="88" stroke="#7CB6FF" strokeWidth="3" strokeLinecap="round" />
-        <path d="M52 80 60 94 68 80z" fill="#7CB6FF" />
+        <line x1="60" y1="14" x2="60" y2="88" stroke="var(--blue)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M52 80 60 94 68 80z" fill="var(--blue)" />
       </g>
     </svg>
   );
