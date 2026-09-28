@@ -15,13 +15,14 @@ export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur
   buildRef.current = build;
   const dRef = useRef(d);
   dRef.current = d;
-  const [rot, setRot] = useState(() => ({ n: 0, idx: 0, scenes: build(d, 0), started: Date.now() }));
+  // seq counts every scene shown, so other parts of the screen can step in time with the scenes
+  const [rot, setRot] = useState(() => ({ n: 0, idx: 0, seq: 0, scenes: build(d, 0), started: Date.now() }));
 
   const scene = rot.scenes[rot.idx] || rot.scenes[0];
   useEffect(() => {
     const id = setTimeout(() => setRot((r) => {
-      if (r.idx + 1 < r.scenes.length) return { ...r, idx: r.idx + 1, started: Date.now() };
-      return { n: r.n + 1, idx: 0, scenes: buildRef.current(dRef.current, r.n + 1), started: Date.now() };
+      if (r.idx + 1 < r.scenes.length) return { ...r, idx: r.idx + 1, seq: r.seq + 1, started: Date.now() };
+      return { n: r.n + 1, idx: 0, seq: r.seq + 1, scenes: buildRef.current(dRef.current, r.n + 1), started: Date.now() };
     }), scene.dur * 1000);
     return () => clearTimeout(id);
   }, [rot.idx, rot.n, scene.dur]);
@@ -43,12 +44,13 @@ export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur
   // A breaking alert that has since cleared: move on
   const breakingAlert = scene.type === 'breaking' ? d.alerts.find((a) => a.id === scene.alertId) : null;
   useEffect(() => {
-    if (scene.type === 'breaking' && !breakingAlert) setRot((r) => (r.idx + 1 < r.scenes.length ? { ...r, idx: r.idx + 1, started: Date.now() } : r));
+    if (scene.type === 'breaking' && !breakingAlert) setRot((r) => (r.idx + 1 < r.scenes.length ? { ...r, idx: r.idx + 1, seq: r.seq + 1, started: Date.now() } : r));
   }, [scene.type, breakingAlert]);
 
   const elapsed = Math.max(0, (now - rot.started) / 1000);
   return {
     scene,
+    seq: rot.seq,
     next: rot.scenes[rot.idx + 1],
     elapsed,
     left: Math.max(0, Math.ceil(scene.dur - elapsed)),

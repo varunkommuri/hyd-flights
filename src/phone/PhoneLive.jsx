@@ -72,7 +72,7 @@ export default function PhoneLive({ query = {} }) {
   const d = useBroadcastData(now);
   const [areaRef, h] = useAreaHeight();
   const per = { h: h || 460 };
-  const { scene, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
+  const { scene, seq, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
     langMode: ['en', 'te'].includes(query.lang) ? query.lang : 'both',
   });
 
@@ -94,7 +94,8 @@ export default function PhoneLive({ query = {} }) {
       <div className="pl-root" lang={lang}>
         <Head now={now} weather={weather} />
         <SceneBar scene={scene} next={next} left={left} />
-        <InfoBar alerts={d.alerts} quiet={d.quiet} style={query.bar === 'flip' ? 'flip' : 'slide'} />
+        <InfoBar alerts={d.alerts} quiet={d.quiet} style={query.bar === 'flip' ? 'flip' : 'slide'}
+          seq={seq} phase={scene.key + lang} phaseMs={(query.lang === 'en' || query.lang === 'te' ? scene.dur : scene.dur / 2) * 1000} />
         <main className="pl-main" ref={areaRef}>
           <div className="pl-scene" key={scene.key + lang}>{body}</div>
         </main>
@@ -151,11 +152,11 @@ function SceneBar({ scene, next, left }) {
 }
 
 // ---------- alerts + news bar ----------
-// One item at a time — every current alert, then the news and travel tips — changing every
-// 5 s without scrolling. style 'slide': each item slides up into place; 'flip': the headline
-// flips into place like a split-flap board (letter by letter in English, word by word in Telugu).
-const ITEM_MS = 5000;
-function InfoBar({ alerts, quiet, style }) {
+// One item at a time — every current alert, then the news and travel tips — in step with the
+// scenes: each scene shows the next item, in English for the first half and the same item in
+// Telugu for the second, flipping together with the rest of the screen. style 'slide': the item
+// slides up into place; 'flip': it flips in like a split-flap board.
+function InfoBar({ alerts, quiet, style, seq, phase, phaseMs }) {
   const lang = useLang();
   const te = lang === 'te';
   const items = [
@@ -164,12 +165,7 @@ function InfoBar({ alerts, quiet, style }) {
     ...(quiet ? [{ key: 'quiet', kind: 'news', tag: 'INFO', title: te ? 'నిశ్శబ్ద సమయం — 05:00 నుండి మళ్లీ విమానాలు' : 'Quiet hours — the board fills up again from 05:00' }] : []),
     ...TIPS.map((tip, k) => ({ key: 'tip' + k, kind: 'news', tag: tip.tag, title: te ? tip.te : tip.en })),
   ];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setI((x) => x + 1), ITEM_MS);
-    return () => clearInterval(id);
-  }, []);
-  const idx = i % items.length;
+  const idx = seq % items.length;
   const it = items[idx];
   return (
     <div className={`pl-strip k-${it.kind} bar-${style}`}>
@@ -180,7 +176,7 @@ function InfoBar({ alerts, quiet, style }) {
         {it.sub && <span>{it.sub}</span>}
       </div>
       <em>{idx + 1}/{items.length}</em>
-      <span className="pls-prog"><i key={i} style={{ animationDuration: ITEM_MS + 'ms' }} /></span>
+      <span className="pls-prog"><i key={phase} style={{ animationDuration: phaseMs + 'ms' }} /></span>
     </div>
   );
 }
