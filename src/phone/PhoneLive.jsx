@@ -185,26 +185,38 @@ function InfoBar({ alerts, quiet, style }) {
   );
 }
 
-// Split-flap style reveal. Latin text scrambles and settles left to right; Telugu can't be
-// scrambled letter by letter without breaking its conjuncts, so its words flip in one by one.
+// Split-flap reveal, like an airport departures board: each character sits on a dark flap tile
+// and flips through random letters before settling, left to right, over about a second.
+// Telugu can't be scrambled letter by letter without breaking its conjuncts, so each Telugu
+// word flips down on its own tile instead.
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const FLAP_TICK = 55, FLAP_MS = 1100;
 function FlipText({ text, te }) {
-  const [shown, setShown] = useState(te ? text : '');
+  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const [p, setP] = useState(reduce ? 1 : 0); // reveal progress 0..1
   useEffect(() => {
-    if (te || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setShown(text); return undefined; }
-    let frame = 0, raf;
-    const total = 18;
-    const run = () => {
-      frame++;
-      const settled = Math.floor((frame / total) * text.length);
-      setShown(text.split('').map((c, k) => (k < settled || c === ' ' ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0])).join(''));
-      if (frame < total) raf = requestAnimationFrame(run); else setShown(text);
-    };
-    raf = requestAnimationFrame(run);
-    return () => cancelAnimationFrame(raf);
-  }, [text, te]);
-  if (!te) return <span className="flip-latin">{shown}</span>;
-  return <>{text.split(' ').map((w, k) => <span key={k} className="flip-word" style={{ animationDelay: k * 70 + 'ms' }}>{w} </span>)}</>;
+    if (reduce) { setP(1); return undefined; }
+    setP(0);
+    const start = performance.now();
+    const id = setInterval(() => {
+      const v = Math.min(1, (performance.now() - start) / FLAP_MS);
+      setP(v);
+      if (v >= 1) clearInterval(id);
+    }, FLAP_TICK);
+    return () => clearInterval(id);
+  }, [text, reduce]);
+  if (te) {
+    const words = text.split(' ');
+    return words.map((w, k) => (
+      <span key={k} className={'flap-word' + ((k + 1) / words.length < p ? ' done' : '')} style={{ animationDelay: (k * FLAP_MS) / words.length + 'ms' }}>{w}</span>
+    ));
+  }
+  const settled = Math.floor(p * (text.length + 1));
+  return text.toUpperCase().split('').map((c, k) => {
+    if (k < settled) return c;
+    if (c === ' ') return ' ';
+    return <span key={k} className="flap-ch">{GLYPHS[(Math.random() * GLYPHS.length) | 0]}</span>;
+  });
 }
 
 // ---------- boards ----------
