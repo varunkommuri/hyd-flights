@@ -12,7 +12,7 @@
   -webkit-user-select: none; user-select: none; -webkit-font-smoothing: antialiased;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
 }
-.pl-root[lang="te"] *, .pl-strip[lang="te"] * { letter-spacing: 0 !important; }
+.pl-root[lang="te"] > :not(.pl-strip) *, .pl-strip[lang="te"] * { letter-spacing: 0 !important; }
 
 /* ---- header ---- */
 .pl-head { flex: none; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 12px; background: var(--head); border-bottom: 1px solid var(--line); }

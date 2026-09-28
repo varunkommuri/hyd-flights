@@ -49,6 +49,7 @@ export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur
   const elapsed = Math.max(0, (now - rot.started) / 1000);
   return {
     scene,
+    started: rot.started,
     next: rot.scenes[rot.idx + 1],
     elapsed,
     left: Math.max(0, Math.ceil(scene.dur - elapsed)),
