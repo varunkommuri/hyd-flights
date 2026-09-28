@@ -11,7 +11,7 @@ import { hhmm } from '../lib/util.js';
 import { LangCtx, useLang, tr, placeName, routeText, windLine, windSub, dateLabel, weekdayLabel } from '../lib/i18n.js';
 import WeatherIcon from '../components/WeatherIcon.jsx';
 import { WindCompass, AirlineLogo } from '../components/Broadcast.jsx';
-import { ITakeoff, ILanding, IBolt } from '../components/Icons.jsx';
+import { ITakeoff, ILanding, IBolt, IBell } from '../components/Icons.jsx';
 import './live.css';
 
 // Sizes (px) used to work out how much fits — keep in sync with live.css
@@ -161,13 +161,14 @@ function AlertStrip({ alerts }) {
     return () => clearInterval(id);
   }, [alerts.length]);
   if (!alerts.length) {
-    return <div className="pl-strip k-clear"><span className="pls-tag">{tr('ALL CLEAR', lang)}</span><b>{lang === 'te' ? 'తదుపరి 3 గంటల్లో అంతరాయాలు లేవు' : 'No disruptions in the next 3 hours'}</b></div>;
+    return <div className="pl-strip k-clear"><IBell size={18} sw={2.2} /><span className="pls-tag">{tr('ALL CLEAR', lang)}</span><b>{lang === 'te' ? 'తదుపరి 3 గంటల్లో అంతరాయాలు లేవు' : 'No disruptions in the next 3 hours'}</b></div>;
   }
   const idx = i % alerts.length;
   const a = alerts[idx];
   const x = alertText(a, lang);
   return (
     <div className={'pl-strip k-' + a.kind}>
+      <span className="pls-bell"><IBell size={18} sw={2.2} /><i>{alerts.length}</i></span>
       <span className="pls-tag">{tr(a.tag, lang)}</span>
       <div className="pls-text" key={a.id + lang}><b>{x.title}</b><span>{x.sub}</span></div>
       <em>{idx + 1}/{alerts.length}</em>

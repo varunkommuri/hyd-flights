@@ -234,3 +234,8 @@
 @media (prefers-reduced-motion: reduce) {
   .pl-scene, .pls-text, .pl-breaking { animation: none; }
 }
+
+/* ---- alert strip: bell with count ---- */
+.pl-strip > svg { flex: none; color: var(--dim); }
+.pls-bell { position: relative; flex: none; display: grid; color: #fff; }
+.pls-bell i { position: absolute; right: -7px; top: -7px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; background: var(--red); font-style: normal; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
