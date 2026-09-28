@@ -3,7 +3,7 @@
 Two views of the same live data:
 
 - **HYD Live broadcast** (`#/tv`): a 1920×1080 airport-style screen made for **YouTube Live**. Nobody can interact with it, so everything rotates on its own: departures and arrivals (domestic and international, paged), delays and disruptions, weather and runway, and travel info. Cancellations, diversions and gate changes also jump in as full-screen **breaking** alerts. Every scene shows in **English for the first half of its time, then in Telugu (తెలుగు)**. The header clock, alerts sidebar and English/Telugu news ticker stay on screen the whole time. Between 01:00 and 05:00 a **quiet hours** screen shows the next departures.
-- **Phone app** (`#/`): the same boards in five tabs (Departures, Arrivals, Delays, Weather, Info). Boards and the delays list turn pages automatically, like the broadcast, instead of scrolling. Also a rotating alert strip, English/తెలుగు switch, light/dark theme, flight details, live radar map and settings.
+- **HYD Live for phones** (`#/`): the same broadcast in portrait, with nothing to tap. Scenes rotate on their own: domestic and international departures, domestic and international arrivals, delays, breaking alerts, weather and travel info. Each shows in English, then Telugu. Board pages fit as many flights as the screen holds. The same preview options apply: `?lang=en|te` and `?only=board|delays|weather|info|breaking|quiet` for previews.
 
 ## Data sources
 
@@ -62,8 +62,8 @@ src/
   lib/        config, reference data, feeds, simulation, store, broadcast (alerts/disruptions), i18n (English/Telugu)
   components/ icons, airline badges, weather illustrations, wind compass, QR code
   tv/         HYD Live 1920×1080 broadcast screen (#/tv)
-  phone/      phone app frame and tabs
-  screens/    FlightDetail, LiveMap, Settings
+  phone/      HYD Live portrait view for phones (#/)
+  screens/    FlightDetail, LiveMap, Settings (direct links only; #/settings holds the API keys)
 public/       manifest, service worker, icons
 ```
 

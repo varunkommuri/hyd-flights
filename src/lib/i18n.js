@@ -5,8 +5,6 @@ import { createContext, useContext } from 'react';
 const TE = {
   'Departures': 'బయలుదేరే విమానాలు',
   'Arrivals': 'రాక విమానాలు',
-  'tab:Departures': 'బయలుదేరడం',
-  'tab:Arrivals': 'రాక',
   'Delays': 'ఆలస్యాలు',
   'Weather': 'వాతావరణం',
   'Info': 'సమాచారం',
@@ -131,16 +129,16 @@ export function windSub(w, lang) {
 }
 
 // "to Mumbai" / "from Mumbai" in either language (Telugu uses case suffixes)
-export function toCity(city, lang) {
-  if (lang !== 'te') return `to ${city}`;
-  const c = cityName(city, lang);
+export function toCity(f, lang) {
+  if (lang !== 'te') return `to ${placeName(f, lang)}`;
+  const c = placeName(f, lang);
   const last = c.slice(-1);
   if (last === '\u0C4D') return c + '\u200Cకు'; // ends in virama: keep it visible (దుబాయ్‌కు)
   return c + ('\u0C3F\u0C40\u0C48\u0C46\u0C47'.includes(last) ? 'కి' : 'కు');
 }
 export const pageLabel = (p, n, lang) => (lang === 'te' ? `పేజీ ${p}/${n}` : `Page ${p} of ${n}`);
-export const fromCity = (city, lang) => (lang === 'te' ? `${cityName(city, lang)} నుండి` : `from ${city}`);
-export const routeText = (f, lang) => (f.dir === 'dep' ? `${f.number} ${toCity(f.other.city, lang)}` : lang === 'te' ? `${fromCity(f.other.city, lang)} ${f.number}` : `${f.number} ${fromCity(f.other.city, lang)}`);
+export const fromCity = (f, lang) => (lang === 'te' ? `${placeName(f, lang)} నుండి` : `from ${placeName(f, lang)}`);
+export const routeText = (f, lang) => (f.dir === 'dep' ? `${f.number} ${toCity(f, lang)}` : lang === 'te' ? `${fromCity(f, lang)} ${f.number}` : `${f.number} ${fromCity(f, lang)}`);
 
 const dateFmt = {};
 export function dateLabel(d, lang) {
@@ -162,18 +160,47 @@ const CITY_TE = {
   Frankfurt: 'ఫ్రాంక్‌ఫర్ట్', 'Hong Kong': 'హాంకాంగ్',
 };
 
+// Airport code -> [English, Telugu]. Live feeds give municipality names ("Vasco da Gama",
+// "Belgaum"); passengers know the city ("Goa", "Belagavi"), and Telugu needs a real name.
+const PLACE = {
+  HYD: ['Hyderabad', 'హైదరాబాద్'], DEL: ['Delhi', 'ఢిల్లీ'], BOM: ['Mumbai', 'ముంబై'], NMI: ['Navi Mumbai', 'నవీ ముంబై'],
+  BLR: ['Bengaluru', 'బెంగళూరు'], MAA: ['Chennai', 'చెన్నై'], CCU: ['Kolkata', 'కోల్‌కతా'], COK: ['Kochi', 'కొచ్చి'],
+  GOI: ['Goa', 'గోవా'], GOX: ['Goa (Mopa)', 'గోవా (మోపా)'], PNQ: ['Pune', 'పుణే'], AMD: ['Ahmedabad', 'అహ్మదాబాద్'],
+  JAI: ['Jaipur', 'జైపూర్'], TIR: ['Tirupati', 'తిరుపతి'], VTZ: ['Visakhapatnam', 'విశాఖపట్నం'], LKO: ['Lucknow', 'లక్నో'],
+  BBI: ['Bhubaneswar', 'భువనేశ్వర్'], NAG: ['Nagpur', 'నాగ్‌పూర్'], VGA: ['Vijayawada', 'విజయవాడ'], IXE: ['Mangaluru', 'మంగళూరు'],
+  TRV: ['Thiruvananthapuram', 'తిరువనంతపురం'], GAU: ['Guwahati', 'గువాహటి'], IXG: ['Belagavi', 'బెళగావి'],
+  IXB: ['Bagdogra', 'బాగ్‌డోగ్రా'], IXC: ['Chandigarh', 'చండీగఢ్'], IDR: ['Indore', 'ఇండోర్'], BHO: ['Bhopal', 'భోపాల్'],
+  RPR: ['Raipur', 'రాయ్‌పూర్'], PAT: ['Patna', 'పట్నా'], VNS: ['Varanasi', 'వారణాసి'], IXR: ['Ranchi', 'రాంచీ'],
+  CJB: ['Coimbatore', 'కోయంబత్తూరు'], IXM: ['Madurai', 'మదురై'], TRZ: ['Tiruchirappalli', 'తిరుచిరాపల్లి'],
+  CCJ: ['Kozhikode', 'కోజికోడ్'], CNN: ['Kannur', 'కన్నూర్'], IXZ: ['Port Blair', 'పోర్ట్ బ్లెయిర్'], SXR: ['Srinagar', 'శ్రీనగర్'],
+  IXJ: ['Jammu', 'జమ్మూ'], ATQ: ['Amritsar', 'అమృత్‌సర్'], UDR: ['Udaipur', 'ఉదయ్‌పూర్'], DED: ['Dehradun', 'డెహ్రాడూన్'],
+  IXU: ['Aurangabad', 'ఔరంగాబాద్'], HBX: ['Hubballi', 'హుబ్బళ్లి'], MYQ: ['Mysuru', 'మైసూరు'], KJB: ['Kurnool', 'కర్నూలు'],
+  RJA: ['Rajahmundry', 'రాజమండ్రి'], CDP: ['Kadapa', 'కడప'], TCR: ['Thoothukudi', 'తూత్తుకుడి'], PNY: ['Puducherry', 'పుదుచ్చేరి'],
+  IXA: ['Agartala', 'అగర్తలా'], IMF: ['Imphal', 'ఇంఫాల్'], DIB: ['Dibrugarh', 'దిబ్రూగఢ్'], JLR: ['Jabalpur', 'జబల్‌పూర్'],
+  BDQ: ['Vadodara', 'వడోదర'], STV: ['Surat', 'సూరత్'], RAJ: ['Rajkot', 'రాజ్‌కోట్'], HSR: ['Rajkot', 'రాజ్‌కోట్'], NDC: ['Nanded', 'నాందేడ్'],
+  KLH: ['Kolhapur', 'కొల్హాపూర్'], SAG: ['Shirdi', 'షిర్డీ'], JGB: ['Jagdalpur', 'జగదల్‌పూర్'], AYJ: ['Ayodhya', 'అయోధ్య'],
+  IXD: ['Prayagraj', 'ప్రయాగ్‌రాజ్'], GWL: ['Gwalior', 'గ్వాలియర్'], GOP: ['Gorakhpur', 'గోరఖ్‌పూర్'], JRG: ['Jharsuguda', 'ఝార్సుగూడ'],
+  IXS: ['Silchar', 'సిల్చార్'], DGH: ['Deoghar', 'దేవ్‌ఘర్'], BEP: ['Ballari', 'బళ్లారి'], KQH: ['Kishangarh', 'కిషన్‌గఢ్'],
+  DXB: ['Dubai', 'దుబాయ్'], DWC: ['Dubai (DWC)', 'దుబాయ్ (DWC)'], AUH: ['Abu Dhabi', 'అబుదాబి'], SHJ: ['Sharjah', 'షార్జా'],
+  RKT: ['Ras Al Khaimah', 'రస్ అల్ ఖైమా'], DOH: ['Doha', 'దోహా'], MCT: ['Muscat', 'మస్కట్'], SLL: ['Salalah', 'సలాలా'],
+  JED: ['Jeddah', 'జెద్దా'], RUH: ['Riyadh', 'రియాద్'], DMM: ['Dammam', 'దమ్మామ్'], MED: ['Madinah', 'మదీనా'],
+  KWI: ['Kuwait', 'కువైట్'], BAH: ['Bahrain', 'బహ్రెయిన్'], SIN: ['Singapore', 'సింగపూర్'], BKK: ['Bangkok', 'బ్యాంకాక్'],
+  HKT: ['Phuket', 'ఫుకెట్'], KUL: ['Kuala Lumpur', 'కౌలాలంపూర్'], CMB: ['Colombo', 'కొలంబో'], MLE: ['Male', 'మాలే'],
+  DAC: ['Dhaka', 'ఢాకా'], KTM: ['Kathmandu', 'ఖాట్మండు'], HKG: ['Hong Kong', 'హాంకాంగ్'], LHR: ['London', 'లండన్'],
+  FRA: ['Frankfurt', 'ఫ్రాంక్‌ఫర్ట్'], ORD: ['Chicago', 'చికాగో'], JFK: ['New York', 'న్యూయార్క్'], EWR: ['New York', 'న్యూయార్క్'],
+  SFO: ['San Francisco', 'శాన్ ఫ్రాన్సిస్కో'], IST: ['Istanbul', 'ఇస్తాంబుల్'],
+};
+// Display name of the other airport, in English or Telugu
+export function placeName(f, lang) {
+  const p = PLACE[f.other.iata];
+  if (p) return lang === 'te' ? p[1] : p[0];
+  return lang === 'te' ? CITY_TE[f.other.city] || f.other.city : f.other.city;
+}
+
 export const LangCtx = createContext('en');
 export const useLang = () => useContext(LangCtx);
 
 export function tr(s, lang) {
-  // 'tab:X' = the short form used on the tab bar, falling back to the normal translation
-  if (s.startsWith('tab:')) { const base = s.slice(4); return lang === 'te' ? TE[s] || TE[base] || base : base; }
   return lang === 'te' ? TE[s] || s : s;
 }
-export const cityName = (city, lang) => (lang === 'te' ? CITY_TE[city] || city : city);
 
-// Returns t() bound to the current language
-export function useT() {
-  const lang = useLang();
-  return (s) => tr(s, lang);
-}

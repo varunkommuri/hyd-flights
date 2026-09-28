@@ -6,11 +6,12 @@
 //              &only=weather (pin one scene: dep | arr | delays | weather | info | quiet | breaking)
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useApp, useNow } from '../lib/store.jsx';
+import { useSceneRotation, URGENT } from '../lib/rotation.js';
 import { useBroadcastData, remarkOf, estOf, alertText } from '../lib/broadcast.js';
 import { effTime } from '../lib/flights.js';
 import { wmo } from '../lib/weather.js';
 import { hhmm } from '../lib/util.js';
-import { LangCtx, useLang, tr, cityName, routeText, pageLabel, windLine, windSub, dateLabel, weekdayLabel } from '../lib/i18n.js';
+import { LangCtx, useLang, tr, placeName, routeText, pageLabel, windLine, windSub, dateLabel, weekdayLabel } from '../lib/i18n.js';
 import { AirlineBadge } from '../components/UI.jsx';
 import WeatherIcon from '../components/WeatherIcon.jsx';
 import { WindCompass, QrCode, phoneUrl } from '../components/Broadcast.jsx';
@@ -18,7 +19,6 @@ import { ITakeoff, ILanding, IBell, IBolt } from '../components/Icons.jsx';
 import './tv.css';
 
 const DOM_ROWS = 6, INTL_ROWS = 4, MAX_PAGES = 3;
-const URGENT = new Set(['cancelled', 'diverted', 'gate']);
 
 // ---------- scale the fixed 1920×1080 stage to the window ----------
 function useStageScale() {
@@ -75,47 +75,7 @@ export default function TvApp({ query }) {
     if (r >= 5 && r !== settings.scheduleRefreshMin) update({ scheduleRefreshMin: r });
   }, [query.refresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---------- rotation ----------
-  const [rotation, setRotation] = useState(() => ({ n: 0, idx: 0, scenes: buildCycle(d, 0, rot, query.only), started: Date.now() }));
-  const dRef = useRef(d);
-  dRef.current = d;
-  const scene = rotation.scenes[rotation.idx];
-
-  useEffect(() => {
-    const id = setTimeout(() => setRotation((r) => {
-      if (r.idx + 1 < r.scenes.length) return { ...r, idx: r.idx + 1, started: Date.now() };
-      const n = r.n + 1;
-      return { n, idx: 0, scenes: buildCycle(dRef.current, n, rot, query.only), started: Date.now() };
-    }), scene.dur * 1000);
-    return () => clearTimeout(id);
-  }, [rotation.idx, rotation.n, scene.dur, rot, query.only]);
-
-  // New cancellations / diversions / gate changes interrupt straight away
-  const seen = useRef(null);
-  useEffect(() => {
-    const urgent = d.alerts.filter((a) => URGENT.has(a.kind));
-    if (!seen.current) { seen.current = new Set(urgent.map((a) => a.id)); return; }
-    const fresh = urgent.filter((a) => !seen.current.has(a.id));
-    fresh.forEach((a) => seen.current.add(a.id));
-    if (!fresh.length) return;
-    setRotation((r) => {
-      const ins = fresh.map((a, i) => ({ type: 'breaking', alertId: a.id, dur: 12, key: `u-${a.id}-${Date.now()}-${i}` }));
-      const scenes = [...r.scenes.slice(0, r.idx + 1), ...ins, ...r.scenes.slice(r.idx + 1)];
-      return { ...r, scenes };
-    });
-  }, [d.alerts]);
-
-  // A breaking alert that has since cleared: move on
-  const breakingAlert = scene.type === 'breaking' ? d.alerts.find((a) => a.id === scene.alertId) : null;
-  useEffect(() => {
-    if (scene.type === 'breaking' && !breakingAlert) setRotation((r) => (r.idx + 1 < r.scenes.length ? { ...r, idx: r.idx + 1, started: Date.now() } : r));
-  }, [scene.type, breakingAlert]);
-
-  const next = rotation.scenes[rotation.idx + 1];
-  const elapsed = (now - rotation.started) / 1000;
-  const left = Math.max(0, Math.ceil(scene.dur - elapsed));
-  // English for the first half of every scene, Telugu for the second
-  const lang = langMode === 'both' ? (elapsed < scene.dur / 2 ? 'en' : 'te') : langMode;
+  const { scene, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, rot, query.only), now, { langMode });
 
   let body;
   switch (scene.type) {
@@ -239,7 +199,7 @@ function BoardRow({ f, dir }) {
       <span className="tvb-time">{hhmm(f.sched)}</span>
       <span className={'tvb-time est ' + e.c}>{e.t}</span>
       <span className="tvb-flight"><AirlineBadge airline={f.airline} size={40} /><b>{num}</b></span>
-      <span className="tvb-city">{lang === 'te' ? cityName(f.other.city, lang) : f.other.city.toUpperCase()}{f.aircraft && <small>{f.aircraft.short.toUpperCase()}</small>}</span>
+      <span className="tvb-city">{lang === 'te' ? placeName(f, lang) : placeName(f, lang).toUpperCase()}{f.aircraft && <small>{f.aircraft.short.toUpperCase()}</small>}</span>
       <GateCell f={f} dir={dir} />
       <span className={`tvb-rem c-${r.c}${r.pill ? ' is-pill' : ''}${r.blink ? ' blink' : ''}`}>{tr(r.t, lang)}</span>
     </div>
@@ -303,7 +263,7 @@ function DisruptionCard({ f }) {
     <div className={'tvd-card' + (cancelled || diverted ? ' red' : '')}>
       <div className="tvd-top">
         <AirlineBadge airline={f.airline} size={46} />
-        <div><b>{te ? cityName(f.other.city, lang) : f.other.city.toUpperCase()}</b><span>{f.number} · {tr(f.dir === 'dep' ? 'Departure' : 'Arrival', lang)}</span></div>
+        <div><b>{te ? placeName(f, lang) : placeName(f, lang).toUpperCase()}</b><span>{f.number} · {tr(f.dir === 'dep' ? 'Departure' : 'Arrival', lang)}</span></div>
         <em className={f.intl ? 'intl' : ''}>{tr(f.intl ? 'INTL' : 'DOM', lang)}</em>
       </div>
       <div className="tvd-times">
@@ -492,7 +452,7 @@ function QuietList({ title, kind, list, foot }) {
       {list.map((f) => (
         <div key={f.id} className="tvq-row">
           <b>{hhmm(effTime(f))}</b><AirlineBadge airline={f.airline} size={40} /><span className="mono">{f.number}</span>
-          <strong>{lang === 'te' ? cityName(f.other.city, lang) : f.other.city.toUpperCase()}</strong><em>{f.gate ? 'G' + f.gate : 'TBA'}</em>
+          <strong>{lang === 'te' ? placeName(f, lang) : placeName(f, lang).toUpperCase()}</strong><em>{f.gate ? 'G' + f.gate : 'TBA'}</em>
         </div>
       ))}
       <p>{foot}</p>

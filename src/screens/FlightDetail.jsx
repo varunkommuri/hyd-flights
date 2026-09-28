@@ -16,7 +16,7 @@ export default function FlightDetail({ id }) {
       <div className="page detail">
         <div className="topbar"><button className="round-btn" onClick={back} aria-label="Back"><IBack /></button></div>
         <div className="empty glass"><b>This flight is no longer on the board</b><span>It may have left the 12-hour window.</span>
-          <button className="btn-primary" onClick={() => go('/departures')}>Browse flights</button></div>
+          <button className="btn-primary" onClick={() => go('/')}>Browse flights</button></div>
       </div>
     );
   }

@@ -2,7 +2,7 @@
   "name": "HYD Flights — Rajiv Gandhi International",
   "short_name": "HYD Flights",
   "description": "Live arrivals, departures, weather and aircraft tracking for Hyderabad airport.",
-  "start_url": "./#/departures",
+  "start_url": "./#/",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
