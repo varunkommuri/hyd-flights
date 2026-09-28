@@ -3,7 +3,7 @@
 // each shown in English for the first half of its time and Telugu for the second.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useApp, useNow } from '../lib/store.jsx';
-import { useBroadcastData, remarkOf, estOf, alertText } from '../lib/broadcast.js';
+import { useBroadcastData, remarkOf, estOf, alertText, TIPS } from '../lib/broadcast.js';
 import { useSceneRotation, URGENT, DUR } from '../lib/rotation.js';
 import { effTime } from '../lib/flights.js';
 import { wmo } from '../lib/weather.js';
@@ -94,11 +94,10 @@ export default function PhoneLive({ query = {} }) {
       <div className="pl-root" lang={lang}>
         <Head now={now} weather={weather} />
         <SceneBar scene={scene} next={next} left={left} />
-        <AlertStrip alerts={d.alerts} />
+        <InfoBar alerts={d.alerts} quiet={d.quiet} style={query.bar === 'flip' ? 'flip' : 'slide'} />
         <main className="pl-main" ref={areaRef}>
           <div className="pl-scene" key={scene.key + lang}>{body}</div>
         </main>
-        <Ticker items={d.ticker} lang={lang} />
       </div>
     </LangCtx.Provider>
   );
@@ -151,46 +150,61 @@ function SceneBar({ scene, next, left }) {
   );
 }
 
-// One alert at a time, changing every 5 s
-function AlertStrip({ alerts }) {
+// ---------- alerts + news bar ----------
+// One item at a time — every current alert, then the news and travel tips — changing every
+// 5 s without scrolling. style 'slide': each item slides up into place; 'flip': the headline
+// flips into place like a split-flap board (letter by letter in English, word by word in Telugu).
+const ITEM_MS = 5000;
+function InfoBar({ alerts, quiet, style }) {
   const lang = useLang();
+  const te = lang === 'te';
+  const items = [
+    ...alerts.map((a) => ({ key: a.id, kind: a.kind, tag: a.tag, ...alertText(a, lang) })),
+    ...(alerts.length ? [] : [{ key: 'clear', kind: 'clear', tag: 'ALL CLEAR', title: te ? 'తదుపరి 3 గంటల్లో అంతరాయాలు లేవు' : 'No disruptions in the next 3 hours' }]),
+    ...(quiet ? [{ key: 'quiet', kind: 'news', tag: 'INFO', title: te ? 'నిశ్శబ్ద సమయం — 05:00 నుండి మళ్లీ విమానాలు' : 'Quiet hours — the board fills up again from 05:00' }] : []),
+    ...TIPS.map((tip, k) => ({ key: 'tip' + k, kind: 'news', tag: tip.tag, title: te ? tip.te : tip.en })),
+  ];
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (alerts.length < 2) return;
-    const id = setInterval(() => setI((x) => x + 1), 5000);
+    const id = setInterval(() => setI((x) => x + 1), ITEM_MS);
     return () => clearInterval(id);
-  }, [alerts.length]);
-  if (!alerts.length) {
-    return <div className="pl-strip k-clear"><IBell size={18} sw={2.2} /><span className="pls-tag">{tr('ALL CLEAR', lang)}</span><b>{lang === 'te' ? 'తదుపరి 3 గంటల్లో అంతరాయాలు లేవు' : 'No disruptions in the next 3 hours'}</b></div>;
-  }
-  const idx = i % alerts.length;
-  const a = alerts[idx];
-  const x = alertText(a, lang);
+  }, []);
+  const idx = i % items.length;
+  const it = items[idx];
   return (
-    <div className={'pl-strip k-' + a.kind}>
-      <span className="pls-bell"><IBell size={18} sw={2.2} /><i>{alerts.length}</i></span>
-      <span className="pls-tag">{tr(a.tag, lang)}</span>
-      <div className="pls-text" key={a.id + lang}><b>{x.title}</b><span>{x.sub}</span></div>
-      <em>{idx + 1}/{alerts.length}</em>
+    <div className={`pl-strip k-${it.kind} bar-${style}`}>
+      <span className="pls-bell"><IBell size={18} sw={2.2} />{alerts.length > 0 && <i>{alerts.length}</i>}</span>
+      <span className="pls-tag" key={'t' + it.key + lang}>{tr(it.tag, lang)}</span>
+      <div className={'pls-text' + (it.sub ? '' : ' one')} key={it.key + lang}>
+        <b>{style === 'flip' ? <FlipText text={it.title} te={te} /> : it.title}</b>
+        {it.sub && <span>{it.sub}</span>}
+      </div>
+      <em>{idx + 1}/{items.length}</em>
+      <span className="pls-prog"><i key={i} style={{ animationDuration: ITEM_MS + 'ms' }} /></span>
     </div>
   );
 }
 
-function Ticker({ items, lang }) {
-  // Show items in the current language; flight alerts exist in both
-  const list = items.filter((it) => (lang === 'te' ? it.te || !items.some((o) => o.te && o.tag === it.tag) : !it.te));
-  const chars = list.reduce((s, it) => s + it.text.length + 6, 0);
-  const row = list.map((it, k) => <span key={k} className="plt-item"><em>{tr(it.tag, lang)}</em>{it.text}</span>);
-  return (
-    <footer className="pl-ticker">
-      <span className="plt-label">{lang === 'te' ? 'వార్తలు' : 'News'}</span>
-      <div className="plt-rail">
-        <div className="plt-track" style={{ animationDuration: `${Math.max(30, chars * 0.14)}s` }}>
-          <div className="plt-seg">{row}</div><div className="plt-seg" aria-hidden="true">{row}</div>
-        </div>
-      </div>
-    </footer>
-  );
+// Split-flap style reveal. Latin text scrambles and settles left to right; Telugu can't be
+// scrambled letter by letter without breaking its conjuncts, so its words flip in one by one.
+const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function FlipText({ text, te }) {
+  const [shown, setShown] = useState(te ? text : '');
+  useEffect(() => {
+    if (te || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setShown(text); return undefined; }
+    let frame = 0, raf;
+    const total = 18;
+    const run = () => {
+      frame++;
+      const settled = Math.floor((frame / total) * text.length);
+      setShown(text.split('').map((c, k) => (k < settled || c === ' ' ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0])).join(''));
+      if (frame < total) raf = requestAnimationFrame(run); else setShown(text);
+    };
+    raf = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(raf);
+  }, [text, te]);
+  if (!te) return <span className="flip-latin">{shown}</span>;
+  return <>{text.split(' ').map((w, k) => <span key={k} className="flip-word" style={{ animationDelay: k * 70 + 'ms' }}>{w} </span>)}</>;
 }
 
 // ---------- boards ----------
