@@ -10,19 +10,12 @@ export const URGENT = new Set(['cancelled', 'diverted', 'gate']);
 // time; alerts, weather and info are quick to take in.
 export const DUR = { board: 12, delays: 10, quiet: 10, breaking: 8, weather: 8, info: 8 };
 
-export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur = DUR.breaking, resetKey } = {}) {
+export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur = DUR.breaking } = {}) {
   const buildRef = useRef(build);
   buildRef.current = build;
   const dRef = useRef(d);
   dRef.current = d;
   const [rot, setRot] = useState(() => ({ n: 0, idx: 0, scenes: build(d, 0), started: Date.now() }));
-
-  // Start a fresh cycle when the layout changes (e.g. the phone is rotated)
-  const firstReset = useRef(true);
-  useEffect(() => {
-    if (firstReset.current) { firstReset.current = false; return; }
-    setRot((r) => ({ n: r.n + 1, idx: 0, scenes: buildRef.current(dRef.current, r.n + 1), started: Date.now() }));
-  }, [resetKey]);
 
   const scene = rot.scenes[rot.idx] || rot.scenes[0];
   useEffect(() => {

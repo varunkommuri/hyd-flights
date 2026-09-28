@@ -25,6 +25,9 @@ const BOARDS = [
 ];
 
 // only (preview): pin one scene type — board | delays | breaking | weather | info | quiet
+// Flight rows that fit in a scene area of height h
+const rowsFor = (h) => Math.max(3, Math.floor((h - SCENE_PAD - HEAD_H) / ROW_H));
+
 function buildCycle(d, n, per, only) {
   if (only === 'quiet') return [{ type: 'quiet', dur: DUR.quiet, key: `${n}-q` }];
   if (only) {
@@ -32,7 +35,7 @@ function buildCycle(d, n, per, only) {
     if (pinned.length) return pinned;
   }
   const s = [];
-  const rows = Math.max(3, Math.floor((per.h - SCENE_PAD - HEAD_H) / ROW_H));
+  const rows = rowsFor(per.h);
   for (const b of BOARDS) {
     if (b.dir === 'dep' && d.quiet) { if (b.kind === 'dom') s.push({ type: 'quiet', dur: DUR.quiet }); continue; }
     const list = (b.dir === 'dep' ? d.deps : d.arrs)[b.kind];
@@ -70,14 +73,14 @@ export default function PhoneLive({ query = {} }) {
   const [areaRef, h] = useAreaHeight();
   const per = { h: h || 460 };
   const { scene, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
-    resetKey: h, langMode: ['en', 'te'].includes(query.lang) ? query.lang : 'both',
+    langMode: ['en', 'te'].includes(query.lang) ? query.lang : 'both',
   });
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   let body = null;
   switch (scene.type) {
-    case 'board': body = <BoardScene scene={scene} list={(scene.dir === 'dep' ? d.deps : d.arrs)[scene.kind]} />; break;
+    case 'board': body = <BoardScene scene={scene} rows={rowsFor(per.h)} list={(scene.dir === 'dep' ? d.deps : d.arrs)[scene.kind]} />; break;
     case 'delays': body = <DelaysScene dis={d.dis} round={scene.round} h={per.h} now={now} />; break;
     case 'breaking': body = breakingAlert ? <BreakingScene alert={breakingAlert} dur={scene.dur} elapsed={elapsed} key={scene.key} /> : null; break;
     case 'weather': body = <WeatherScene w={weather} h={per.h} />; break;
@@ -190,10 +193,13 @@ function Ticker({ items, lang }) {
 }
 
 // ---------- boards ----------
-function BoardScene({ scene, list }) {
+// rows comes from the current height, so the board still fits if the phone's browser bar
+// appears or the phone is rotated mid-cycle; the page count updates on the next cycle.
+function BoardScene({ scene, list, rows }) {
   const lang = useLang();
   const t = (x) => tr(x, lang);
-  const shown = list.slice(scene.page * scene.rows, scene.page * scene.rows + scene.rows);
+  const page = Math.min(scene.page, Math.max(0, Math.ceil(list.length / rows) - 1));
+  const shown = list.slice(page * rows, page * rows + rows);
   return (
     <div className={'pl-board ' + scene.kind}>
       <div className="plb-head">
