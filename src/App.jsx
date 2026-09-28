@@ -1,85 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useApp, useNow } from './lib/store.jsx';
 import { statusOf, effTime } from './lib/flights.js';
 import { go } from './lib/nav.js';
-import { IHome, IPlane, IBoard, IMap, ICloud, IChevron } from './components/Icons.jsx';
+import { useBroadcastData } from './lib/broadcast.js';
+import { LangCtx } from './lib/i18n.js';
+import { IChevron } from './components/Icons.jsx';
 import { AirlineBadge } from './components/UI.jsx';
 import PullToRefresh from './components/PullToRefresh.jsx';
-import Home from './screens/Home.jsx';
-import Flights from './screens/Flights.jsx';
 import FlightDetail from './screens/FlightDetail.jsx';
-import Board from './screens/Board.jsx';
 import LiveMap from './screens/LiveMap.jsx';
-import Weather from './screens/Weather.jsx';
 import Settings from './screens/Settings.jsx';
+import TvApp from './tv/TvApp.jsx';
+import { PhoneHeader, AlertStrip, AlertSheet, NewsTicker, TabBar } from './phone/Chrome.jsx';
+import Boards from './phone/Boards.jsx';
+import { DelaysTab, WeatherTab, InfoTab } from './phone/Tabs.jsx';
+import './phone/phone.css';
 
-// Tiny hash router: #/flights?dir=arr  |  #/flight/<id>  |  #/map?focus=<id>
+// Tiny hash router: #/departures  |  #/flight/<id>  |  #/map?focus=<id>  |  #/tv (broadcast screen)
 function parseHash() {
   const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
   const [path, q = ''] = h.split('?');
   const parts = path.split('/').filter(Boolean);
-  return { name: parts[0] || 'home', arg: parts.slice(1).join('/'), query: Object.fromEntries(new URLSearchParams(q)) };
+  const query = Object.fromEntries(new URLSearchParams(q));
+  let name = parts[0] || 'departures';
+  // Routes from the previous version of the app
+  if (name === 'home' || name === 'board' || name === 'flights') name = query.dir === 'arr' ? 'arrivals' : 'departures';
+  return { name, arg: parts.slice(1).join('/'), query };
 }
 
-
-const TABS = [
-  { name: 'home', label: 'Home', Icon: IHome },
-  { name: 'flights', label: 'Flights', Icon: IPlane },
-  { name: 'board', label: 'Board', Icon: IBoard },
-  { name: 'map', label: 'Live map', Icon: IMap },
-  { name: 'weather', label: 'Weather', Icon: ICloud },
-];
+const TAB_FOR = { flight: null, map: 'info', settings: 'info' };
 
 export default function App() {
   const [route, setRoute] = useState(parseHash);
-  const { toast, refreshAll } = useApp();
-
   useEffect(() => {
     const on = () => { setRoute(parseHash()); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+  if (route.name === 'tv') return <TvApp query={route.query} />;
+  return <PhoneApp route={route} />;
+}
+
+function PhoneApp({ route }) {
+  const { toast, refreshAll, settings } = useApp();
+  const now = useNow(1000);
+  const d = useBroadcastData(now);
+  const [scope, setScope] = useState('all');
+  const [sheet, setSheet] = useState(null);
+  const closeSheet = useCallback(() => setSheet(null), []);
+  const lang = settings.lang === 'te' ? 'te' : 'en';
+
   useEffect(() => {
     if (route.name !== 'map') document.querySelector('.screen')?.scrollTo?.({ top: 0 });
   }, [route.name, route.arg]);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
-  const activeTab = route.name === 'flight' ? 'flights' : route.name === 'settings' ? 'home' : route.name;
+  const active = route.name in TAB_FOR ? TAB_FOR[route.name] : route.name;
   let screen;
   switch (route.name) {
-    case 'flights': screen = <Flights query={route.query} />; break;
+    case 'arrivals': screen = <Boards dir="arr" lists={d.arrs} scope={scope} setScope={setScope} now={now} />; break;
+    case 'delays': screen = <DelaysTab dis={d.dis} />; break;
+    case 'weather': screen = <WeatherTab />; break;
+    case 'info': screen = <InfoTab />; break;
     case 'flight': screen = <FlightDetail id={route.arg} />; break;
-    case 'board': screen = <Board query={route.query} />; break;
     case 'map': screen = <LiveMap query={route.query} />; break;
-    case 'weather': screen = <Weather />; break;
     case 'settings': screen = <Settings />; break;
-    default: screen = <Home />;
+    default: screen = <Boards dir="dep" lists={d.deps} scope={scope} setScope={setScope} quiet={d.quiet} stale={d.stale} now={now} />;
   }
+  const legacy = route.name === 'flight' || route.name === 'map' || route.name === 'settings';
 
   return (
-    <div className={`app route-${route.name}`}>
-      <Sky />
-      <PullToRefresh className="screen" key={route.name + route.arg + (route.name === 'map' ? '' : JSON.stringify(route.query))}
-        onRefresh={refreshAll} disabled={route.name === 'map' || route.name === 'settings'}>{screen}</PullToRefresh>
-      {route.name !== 'flight' && route.name !== 'settings' && <FollowPill hidden={route.name === 'map'} />}
-      <nav className="tabbar" aria-label="Main">
-        {TABS.map(({ name, label, Icon }) => (
-          <button key={name} className={activeTab === name ? 'on' : ''} onClick={() => go('/' + name)} aria-current={activeTab === name ? 'page' : undefined}>
-            <span className="tab-ico"><Icon size={22} /></span>
-            <span className="tab-lbl">{label}</span>
-          </button>
-        ))}
-      </nav>
-      {toast && <div className={`toast tone-${toast.tone}`} key={toast.id} role="status">{toast.msg}</div>}
-    </div>
-  );
-}
-
-function Sky() {
-  return (
-    <div className="sky" aria-hidden="true">
-      <div className="stars s1" /><div className="stars s2" />
-      <div className="horizon" />
-    </div>
+    <LangCtx.Provider value={lang}>
+      <div className={`app ph-app route-${route.name}`}>
+        {!legacy && <PhoneHeader now={now} />}
+        {!legacy && <AlertStrip alerts={d.alerts} onOpen={setSheet} />}
+        <div className="ph-body">
+          <PullToRefresh className="screen" key={route.name + route.arg + (route.name === 'map' ? '' : JSON.stringify(route.query))}
+            onRefresh={refreshAll} disabled={route.name === 'map' || route.name === 'settings'}>{screen}</PullToRefresh>
+          {route.name !== 'flight' && route.name !== 'settings' && <FollowPill hidden={route.name === 'map'} />}
+        </div>
+        <NewsTicker items={d.ticker} />
+        <TabBar active={active} badge={d.dis.list.length} />
+        {sheet != null && <AlertSheet alerts={d.alerts} index={sheet} onIndex={setSheet} onClose={closeSheet} />}
+        {toast && <div className={`toast tone-${toast.tone}`} key={toast.id} role="status">{toast.msg}</div>}
+      </div>
+    </LangCtx.Provider>
   );
 }
 

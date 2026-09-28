@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS = {
   followed: null,           // id of the flight the user follows
   haptics: true,
   theme: 'system',          // system | light | dark
+  lang: 'en',               // en | te (Telugu)
 };
 
 export function loadSettings() {
