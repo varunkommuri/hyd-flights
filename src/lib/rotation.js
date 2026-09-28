@@ -8,7 +8,7 @@ export const URGENT = new Set(['cancelled', 'diverted', 'gate']);
 
 // Seconds each scene stays up (half English, half Telugu). Flight boards need the most reading
 // time; alerts, weather and info are quick to take in.
-export const DUR = { board: 12, delays: 10, alerts: 10, quiet: 10, breaking: 8, weather: 8, info: 8 };
+export const DUR = { board: 12, delays: 10, quiet: 10, breaking: 8, weather: 8, info: 8 };
 
 export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur = DUR.breaking } = {}) {
   const buildRef = useRef(build);

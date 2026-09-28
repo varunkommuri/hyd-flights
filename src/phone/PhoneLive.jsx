@@ -26,9 +26,6 @@ const BOARDS = [
 
 // only (preview): pin one scene type — board | delays | breaking | weather | info | quiet
 // Flight rows that fit in a scene area of height h
-// Alert cards that fit
-const ALERT_H = 70, ALERT_GAP = 8;
-const alertsFor = (h) => Math.max(2, Math.floor((h - 16 + ALERT_GAP) / (ALERT_H + ALERT_GAP)));
 const rowsFor = (h) => Math.max(3, Math.floor((h - SCENE_PAD - HEAD_H) / ROW_H));
 
 function buildCycle(d, n, per, only) {
@@ -47,11 +44,6 @@ function buildCycle(d, n, per, only) {
     for (let i = 0; i < pages; i++) s.push({ ...b, page: i, pages, rows, dur: DUR.board });
   }
   s.push({ type: 'delays', round: n, dur: DUR.delays });
-  // Every alert, like the TV's alerts panel (the strip above only shows one at a time)
-  if (d.alerts.length) {
-    const pages = Math.min(3, Math.ceil(d.alerts.length / alertsFor(per.h)));
-    for (let i = 0; i < pages; i++) s.push({ type: 'alerts', page: i, pages, dur: DUR.alerts });
-  }
   const urgent = d.alerts.filter((a) => URGENT.has(a.kind));
   if (urgent.length) s.push({ type: 'breaking', alertId: urgent[n % urgent.length].id, dur: DUR.breaking });
   s.push({ type: 'weather', dur: DUR.weather }, { type: 'info', dur: DUR.info });
@@ -90,7 +82,6 @@ export default function PhoneLive({ query = {} }) {
   switch (scene.type) {
     case 'board': body = <BoardScene scene={scene} rows={rowsFor(per.h)} list={(scene.dir === 'dep' ? d.deps : d.arrs)[scene.kind]} />; break;
     case 'delays': body = <DelaysScene dis={d.dis} round={scene.round} h={per.h} now={now} />; break;
-    case 'alerts': body = <AlertsScene alerts={d.alerts} page={scene.page} per={alertsFor(per.h)} />; break;
     case 'breaking': body = breakingAlert ? <BreakingScene alert={breakingAlert} dur={scene.dur} elapsed={elapsed} key={scene.key} /> : null; break;
     case 'weather': body = <WeatherScene w={weather} h={per.h} />; break;
     case 'info': body = <InfoScene schedule={schedule} stale={d.stale} />; break;
@@ -131,13 +122,13 @@ function Head({ now, weather: w }) {
   );
 }
 
-const SCENE_EN = { alerts: 'Alerts', quiet: 'Quiet hours', delays: 'Delays & disruptions', breaking: 'Breaking', weather: 'Weather & runway', info: 'Travel info' };
-const SCENE_TE = { alerts: 'హెచ్చరికలు', quiet: 'నిశ్శబ్ద సమయం', delays: 'ఆలస్యాలు & అంతరాయాలు', breaking: 'తాజా వార్త', weather: 'వాతావరణం & రన్‌వే', info: 'ప్రయాణ సమాచారం' };
+const SCENE_EN = { quiet: 'Quiet hours', delays: 'Delays & disruptions', breaking: 'Breaking', weather: 'Weather & runway', info: 'Travel info' };
+const SCENE_TE = { quiet: 'నిశ్శబ్ద సమయం', delays: 'ఆలస్యాలు & అంతరాయాలు', breaking: 'తాజా వార్త', weather: 'వాతావరణం & రన్‌వే', info: 'ప్రయాణ సమాచారం' };
 function sceneTitle(s, lang) {
   if (s.type === 'board') return tr(`${s.kind === 'dom' ? 'Domestic' : 'International'} ${s.dir === 'dep' ? 'departures' : 'arrivals'}`, lang);
   return (lang === 'te' ? SCENE_TE : SCENE_EN)[s.type];
 }
-const tone = (s) => (s.type === 'board' ? s.kind : s.type === 'breaking' ? 'red' : s.type === 'delays' || s.type === 'alerts' ? 'amber' : 'plain');
+const tone = (s) => (s.type === 'board' ? s.kind : s.type === 'breaking' ? 'red' : s.type === 'delays' ? 'amber' : 'plain');
 
 function SceneBar({ scene, next, left }) {
   const lang = useLang();
@@ -181,26 +172,6 @@ function AlertStrip({ alerts }) {
       <span className="pls-tag">{tr(a.tag, lang)}</span>
       <div className="pls-text" key={a.id + lang}><b>{x.title}</b><span>{x.sub}</span></div>
       <em>{idx + 1}/{alerts.length}</em>
-    </div>
-  );
-}
-
-// ---------- all alerts ----------
-function AlertsScene({ alerts, page, per }) {
-  const lang = useLang();
-  const p = Math.min(page, Math.max(0, Math.ceil(alerts.length / per) - 1));
-  return (
-    <div className="pl-alerts">
-      {alerts.slice(p * per, p * per + per).map((a) => {
-        const x = alertText(a, lang);
-        return (
-          <div key={a.id} className={'pla-card k-' + a.kind}>
-            <span className="pls-tag">{tr(a.tag, lang)}</span>
-            <b>{x.title}</b>
-            <span>{x.sub}</span>
-          </div>
-        );
-      })}
     </div>
   );
 }
