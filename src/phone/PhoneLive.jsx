@@ -72,9 +72,10 @@ export default function PhoneLive({ query = {} }) {
   const d = useBroadcastData(now);
   const [areaRef, h] = useAreaHeight();
   const per = { h: h || 460 };
-  const { scene, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
-    langMode: ['en', 'te'].includes(query.lang) ? query.lang : 'both',
-  });
+  const langMode = ['en', 'te'].includes(query.lang) ? query.lang : 'both';
+  const { scene, started, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, { langMode });
+  // When the board next flips language or page, so the alerts bar can keep clear of it
+  const boardChanges = [...(langMode === 'both' ? [started + (scene.dur * 1000) / 2] : []), started + scene.dur * 1000];
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
@@ -95,7 +96,7 @@ export default function PhoneLive({ query = {} }) {
         <Head now={now} weather={weather} />
         <SceneBar scene={scene} next={next} left={left} />
         <InfoBar alerts={d.alerts} quiet={d.quiet} style={query.bar === 'flip' ? 'flip' : 'slide'}
-          langMode={['en', 'te'].includes(query.lang) ? query.lang : 'both'} />
+          langMode={langMode} boardChanges={boardChanges} />
         <main className="pl-main" ref={areaRef}>
           <div className="pl-scene" key={scene.key + lang}>{body}</div>
         </main>
@@ -156,12 +157,27 @@ function SceneBar({ scene, next, left }) {
 // Each item shows in English for 3 s and then straight away in Telugu for 3 s, so an alert's two
 // languages always appear together. style 'slide': the item slides up into place; 'flip': it
 // flips in like a split-flap board.
-const STEP_MS = 3000, TIPS_PER_ROUND = 2;
-function InfoBar({ alerts, quiet, style, langMode }) {
+// The board's language flip shows on the next 1 s clock tick, so keep a wider gap after a change.
+const STEP_MS = 3000, CLEAR_BEFORE = 800, CLEAR_AFTER = 1800, TIPS_PER_ROUND = 2;
+function InfoBar({ alerts, quiet, style, langMode, boardChanges }) {
+  // The bar runs on its own 3 s clock, independent of the board. So the two never change at the
+  // same moment, a step that would land within a second of a board page or language change
+  // waits until it has passed.
   const [step, setStep] = useState(0);
+  const changesRef = useRef(boardChanges);
+  changesRef.current = boardChanges;
+  const [stepMs, setStepMs] = useState(STEP_MS);
   useEffect(() => {
-    const id = setInterval(() => setStep((x) => x + 1), STEP_MS);
-    return () => clearInterval(id);
+    let id;
+    const plan = () => {
+      let at = Date.now() + STEP_MS;
+      for (const c of changesRef.current) if (at > c - CLEAR_BEFORE && at < c + CLEAR_AFTER) at = c + CLEAR_AFTER;
+      const wait = at - Date.now();
+      setStepMs(wait);
+      id = setTimeout(() => { setStep((x) => x + 1); plan(); }, wait);
+    };
+    plan();
+    return () => clearTimeout(id);
   }, []);
   const both = langMode === 'both';
   const pos = both ? Math.floor(step / 2) : step; // which item, counting across rounds
@@ -188,7 +204,7 @@ function InfoBar({ alerts, quiet, style, langMode }) {
           {it.sub && <span>{it.sub}</span>}
         </div>
         <em>{idx + 1}/{perRound}</em>
-        <span className="pls-prog"><i key={step} style={{ animationDuration: STEP_MS + 'ms' }} /></span>
+        <span className="pls-prog"><i key={step} style={{ animationDuration: stepMs + 'ms' }} /></span>
       </div>
     </LangCtx.Provider>
   );
