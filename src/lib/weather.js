@@ -41,12 +41,25 @@ function flightCategory(visKm, ceilingFt) {
 
 function buildAlert(hourly) {
   const next = hourly.slice(1, 13);
+  const hh = (h) => String(h.hour).padStart(2, '0') + ':00';
   const storm = next.find((h) => h.code >= 95);
-  if (storm) return { kind: 'storm', title: `Thunderstorms from ${String(storm.hour).padStart(2, '0')}:00`, short: `Thunderstorms likely after ${String(storm.hour).padStart(2, '0')}:00 — expect delays`, body: `Flights after ${String(storm.hour).padStart(2, '0')}:00 may be held or delayed. We'll alert you if a flight you follow is affected.` };
+  if (storm) {
+    const t = hh(storm);
+    return { kind: 'storm', hour: storm.hour, title: `Thunderstorms from ${t}`, short: `Thunderstorms likely after ${t} — expect delays`, body: `Flights after ${t} may be held or delayed. We'll alert you if a flight you follow is affected.`,
+      te: { title: `${t} నుండి ఉరుములతో వర్షం`, short: `${t} తర్వాత ఉరుములతో వర్షం — ఆలస్యాలు ఉండవచ్చు`, body: `${t} తర్వాత విమానాలు ఆలస్యం కావచ్చు` } };
+  }
   const heavy = next.find((h) => h.code === 65 || h.code === 82 || (h.pop >= 80 && h.code >= 61));
-  if (heavy) return { kind: 'rain', title: `Heavy rain around ${String(heavy.hour).padStart(2, '0')}:00`, short: `Heavy rain around ${String(heavy.hour).padStart(2, '0')}:00 — minor delays possible`, body: 'Ground operations may slow down. Leave a little extra time to reach the airport.' };
+  if (heavy) {
+    const t = hh(heavy);
+    return { kind: 'rain', hour: heavy.hour, title: `Heavy rain around ${t}`, short: `Heavy rain around ${t} — minor delays possible`, body: 'Ground operations may slow down. Leave a little extra time to reach the airport.',
+      te: { title: `${t} సమయంలో భారీ వర్షం`, short: `${t} సమయంలో భారీ వర్షం — స్వల్ప ఆలస్యాలు ఉండవచ్చు`, body: 'విమానాశ్రయానికి చేరుకోవడానికి కొంత అదనపు సమయం కేటాయించండి' } };
+  }
   const fog = next.find((h) => h.vis != null && h.vis < 2);
-  if (fog) return { kind: 'fog', title: `Low visibility around ${String(fog.hour).padStart(2, '0')}:00`, short: `Low visibility expected around ${String(fog.hour).padStart(2, '0')}:00`, body: 'Arrivals may be spaced out further under low-visibility procedures.' };
+  if (fog) {
+    const t = hh(fog);
+    return { kind: 'fog', hour: fog.hour, title: `Low visibility around ${t}`, short: `Low visibility expected around ${t}`, body: 'Arrivals may be spaced out further under low-visibility procedures.',
+      te: { title: `${t} సమయంలో తక్కువ దృశ్యమానత`, short: `${t} సమయంలో తక్కువ దృశ్యమానత అంచనా`, body: 'రాక విమానాల మధ్య ఎక్కువ విరామం ఉండవచ్చు' } };
+  }
   return null;
 }
 

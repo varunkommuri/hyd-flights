@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useApp } from './store.jsx';
 import { effTime, isDisrupted } from './flights.js';
 import { hhmm, hourIST } from './util.js';
+import { routeText } from './i18n.js';
 
 // ---------- board remarks ----------
 // c: colour key (green | yellow | red | white | grey | orange), pill: filled badge, blink: attention
@@ -108,7 +109,10 @@ export function disruptions(flights, now = Date.now()) {
 }
 
 // ---------- alerts ----------
-const route = (f) => `${f.number} ${f.dir === 'dep' ? 'to' : 'from'} ${f.other.city}`;
+// Each alert carries English fields plus a `te` object with the Telugu title/sub.
+const route = (f) => routeText(f, 'en');
+const routeTe = (f) => routeText(f, 'te');
+const contactTe = (f) => `${f.airline.name}ను సంప్రదించండి`;
 
 export function buildAlerts(flights, weather, gateChanges, now = Date.now()) {
   const soon = (f) => f.sched >= now - 30 * 60000 && f.sched <= now + 4 * 3600000;
@@ -117,31 +121,41 @@ export function buildAlerts(flights, weather, gateChanges, now = Date.now()) {
     if (!soon(f)) continue;
     if (f.status === 'cancelled') {
       out.push({ id: 'x-' + f.id, kind: 'cancelled', rank: 0, tag: 'CANCELLED', title: route(f), flight: f,
-        sub: `Was ${hhmm(f.sched)} · contact ${f.airline.name} for rebooking` });
+        sub: `Was ${hhmm(f.sched)} · contact ${f.airline.name} for rebooking`,
+        te: { title: routeTe(f), sub: `నిర్ణీత సమయం ${hhmm(f.sched)} · రీబుకింగ్ కోసం ${contactTe(f)}` } });
     } else if (f.status === 'diverted') {
       out.push({ id: 'v-' + f.id, kind: 'diverted', rank: 1, tag: 'DIVERTED', title: route(f), flight: f,
-        sub: `Diverted · check with ${f.airline.name}` });
+        sub: `Diverted · check with ${f.airline.name}`,
+        te: { title: routeTe(f), sub: `దారి మళ్లించారు · ${contactTe(f)}` } });
     }
   }
   for (const f of flights) {
     const g = gateChanges.get(f.id);
     if (!g || f.status === 'departed' || f.status === 'cancelled') continue;
     out.push({ id: `g-${f.id}-${f.gate}`, kind: 'gate', rank: 2, tag: 'GATE CHANGE', title: route(f), flight: f, gate: f.gate, prevGate: g.prev,
-      sub: `Now Gate ${f.gate} (was Gate ${g.prev}) · ${hhmm(effTime(f))}` });
+      sub: `Now Gate ${f.gate} (was Gate ${g.prev}) · ${hhmm(effTime(f))}`,
+      te: { title: routeTe(f), sub: `ఇప్పుడు గేట్ ${f.gate} (గతంలో గేట్ ${g.prev}) · ${hhmm(effTime(f))}` } });
   }
-  if (weather?.alert) {
-    out.push({ id: 'w-' + weather.alert.kind + weather.alert.title, kind: 'weather', rank: 3, tag: 'WEATHER', title: weather.alert.title, sub: weather.alert.body.split('. ')[0] });
+  const wa = weather?.alert;
+  if (wa) {
+    out.push({ id: 'w-' + wa.kind + wa.title, kind: 'weather', rank: 3, tag: 'WEATHER', title: wa.title, sub: wa.body.split('. ')[0],
+      te: { title: wa.te?.title || wa.title, sub: wa.te?.body || wa.body.split('. ')[0] } });
   }
   const delayed = flights
     .filter((f) => soon(f) && (f.delayMin ?? 0) >= 30 && !['cancelled', 'diverted', 'departed', 'arrived', 'landed'].includes(f.status))
     .sort((a, b) => b.delayMin - a.delayMin).slice(0, 6);
   for (const f of delayed) {
     const where = f.dir === 'dep' ? (f.gate ? ` · Gate ${f.gate}` : '') : (f.belt ? ` · Belt ${f.belt}` : '');
+    const whereTe = f.dir === 'dep' ? (f.gate ? ` · గేట్ ${f.gate}` : '') : (f.belt ? ` · బెల్ట్ ${f.belt}` : '');
     out.push({ id: 'd-' + f.id, kind: 'delayed', rank: 4, tag: 'DELAYED', title: route(f), flight: f,
-      sub: `Now ${hhmm(effTime(f))} · ${f.delayMin} min late${where}` });
+      sub: `Now ${hhmm(effTime(f))} · ${f.delayMin} min late${where}`,
+      te: { title: routeTe(f), sub: `ఇప్పుడు ${hhmm(effTime(f))} · ${f.delayMin} నిమిషాలు ఆలస్యం${whereTe}` } });
   }
   return out.sort((a, b) => a.rank - b.rank);
 }
+
+// Alert text in the requested language
+export const alertText = (a, lang) => (lang === 'te' && a.te ? a.te : a);
 
 // ---------- ticker ----------
 export const TIPS = [
@@ -157,7 +171,7 @@ export function tickerItems(alerts, quiet) {
   const items = [];
   for (const a of alerts.slice(0, 6)) {
     items.push({ tag: a.tag, text: `${a.title} — ${a.sub}` });
-    if (a.kind === 'weather') items.push({ tag: 'WEATHER', te: true, text: `${a.title} — ప్రయాణానికి అదనపు సమయం కేటాయించండి` });
+    if (a.te) items.push({ tag: a.tag, te: true, text: `${a.te.title} — ${a.te.sub}` });
   }
   if (quiet) items.push({ tag: 'INFO', text: 'Quiet hours — the board fills up again from 05:00' }, { tag: 'INFO', te: true, text: 'నిశ్శబ్ద సమయం — 05:00 నుండి మళ్లీ విమానాలు' });
   for (const tip of TIPS) items.push({ tag: tip.tag, text: tip.en }, { tag: tip.tag, te: true, text: tip.te });

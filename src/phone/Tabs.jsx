@@ -1,5 +1,6 @@
 // Delays, Weather and Info tabs of the phone app
 import { useApp } from '../lib/store.jsx';
+import { usePager, Pager } from './Boards.jsx';
 import { effTime } from '../lib/flights.js';
 import { wmo } from '../lib/weather.js';
 import { hhmm, weekday } from '../lib/util.js';
@@ -10,11 +11,17 @@ import WeatherIcon from '../components/WeatherIcon.jsx';
 import { WindCompass } from '../components/Broadcast.jsx';
 import { IBolt, IChevron, IMap, IGear } from '../components/Icons.jsx';
 
+const CARD_H = 104, CARD_GAP = 10;
+
 export function DelaysTab({ dis }) {
   const t = useT();
   const lang = useLang();
+  const perAt = (h) => Math.max(1, Math.floor((h + CARD_GAP) / (CARD_H + CARD_GAP)));
+  const pager = usePager((h) => Math.ceil(dis.list.length / perAt(h)), 'delays');
+  const per = pager.h ? perAt(pager.h) : 0;
+  const shown = dis.list.slice(pager.page * per, pager.page * per + per);
   return (
-    <div className="ph-page">
+    <div className="ph-page fit">
       <h1 className="ph-h1">{t('Delays & disruptions')}</h1>
       <div className="phd-stats">
         <div className="y"><b>{dis.delayed}</b><span>{t('Delayed')}</span></div>
@@ -29,7 +36,10 @@ export function DelaysTab({ dis }) {
           <p>No delays, cancellations or diversions in the next 3 hours · {dis.domCount} domestic · {dis.intlCount} international</p>
         </div>
       )}
-      {dis.list.map((f) => {
+      {dis.list.length > 0 && <Pager {...pager} />}
+      <div className="phd-list" ref={pager.boxRef}>
+      <div className="phb-rows phd-rows" key={pager.page}>
+      {shown.map((f) => {
         const off = f.status === 'cancelled' || f.status === 'diverted';
         const note = f.status === 'cancelled' ? `Contact ${f.airline.name}` : f.status === 'diverted' ? `Check with ${f.airline.name}`
           : f.dir === 'dep' ? (f.gate ? `Gate ${f.gate}` : 'Gate TBA') : (f.belt ? `Belt ${f.belt}` : 'Belt TBA');
@@ -48,6 +58,8 @@ export function DelaysTab({ dis }) {
           </button>
         );
       })}
+      </div>
+      </div>
     </div>
   );
 }

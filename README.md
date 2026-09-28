@@ -2,8 +2,8 @@
 
 Two views of the same live data:
 
-- **HYD Live broadcast** (`#/tv`): a 1920×1080 airport-style screen made for **YouTube Live**. Nobody can interact with it, so everything rotates on its own: departures and arrivals (domestic and international, paged), delays and disruptions, weather and runway, and travel info. Cancellations, diversions and gate changes also jump in as full-screen **breaking** alerts. The header clock, alerts sidebar and English/Telugu news ticker stay on screen the whole time. Between 01:00 and 05:00 a **quiet hours** screen shows the next departures.
-- **Phone app** (`#/`): the same boards in five tabs (Departures, Arrivals, Delays, Weather, Info), a rotating alert strip, English/తెలుగు switch, light/dark theme, flight details, live radar map and settings.
+- **HYD Live broadcast** (`#/tv`): a 1920×1080 airport-style screen made for **YouTube Live**. Nobody can interact with it, so everything rotates on its own: departures and arrivals (domestic and international, paged), delays and disruptions, weather and runway, and travel info. Cancellations, diversions and gate changes also jump in as full-screen **breaking** alerts. Every scene shows in **English for the first half of its time, then in Telugu (తెలుగు)**. The header clock, alerts sidebar and English/Telugu news ticker stay on screen the whole time. Between 01:00 and 05:00 a **quiet hours** screen shows the next departures.
+- **Phone app** (`#/`): the same boards in five tabs (Departures, Arrivals, Delays, Weather, Info). Boards and the delays list turn pages automatically, like the broadcast, instead of scrolling. Also a rotating alert strip, English/తెలుగు switch, light/dark theme, flight details, live radar map and settings.
 
 ## Data sources
 
@@ -34,7 +34,8 @@ URL options (add after `#/tv?`, joined with `&`):
 
 | Option | What it does | Example |
 |---|---|---|
-| `rotate` | Seconds each board page stays up (default 12) | `rotate=15` |
+| `rotate` | Seconds each board page stays up, half English and half Telugu (default 16) | `rotate=20` |
+| `lang` | `both` (default) alternates English and Telugu; `en` or `te` shows one language only | `lang=te` |
 | `refresh` | Minutes between flight-schedule API calls on this machine | `refresh=30` |
 | `only` | Pin one scene, handy for previews: `dep`, `arr`, `delays`, `weather`, `info`, `quiet`, `breaking` | `only=weather` |
 
