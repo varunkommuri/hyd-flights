@@ -55,7 +55,7 @@
 .tvb-banner { display: flex; align-items: center; gap: 16px; padding: 0 26px; height: 64px; flex: none; background: var(--tv-yellow); color: #0B1033; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 700; font-size: 44px; text-transform: uppercase; letter-spacing: .02em; }
 .tv-board.intl .tvb-banner { background: var(--tv-orange); }
 .tvb-banner em { margin-left: auto; font-style: normal; font-size: 30px; text-transform: none; }
-.tvb-head, .tvb-row { display: grid; grid-template-columns: 134px 134px 226px minmax(0, 1fr) 120px 250px; align-items: center; column-gap: 14px; padding: 0 24px; }
+.tvb-head, .tvb-row { display: grid; grid-template-columns: 110px 110px 128px 146px minmax(0, 1fr) 100px 232px; align-items: center; column-gap: 12px; padding: 0 24px; }
 .tvb-head { height: 44px; flex: none; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; color: var(--tv-dim); }
 .tvb-row { height: 60px; margin: 0 10px 2px; padding: 0 14px; border-radius: 10px; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 700; }
 .tvb-row:nth-child(even) { background: #141B48; }
@@ -64,7 +64,8 @@
 .tvb-time.est.dim { color: #8E98C6; }
 .tvb-time.est.late { color: var(--tv-amber); }
 .tvb-time.est.early { color: var(--tv-green); }
-.tvb-flight { display: flex; align-items: center; gap: 14px; font-family: 'JetBrains Mono', 'Noto Sans Telugu', monospace; font-size: 30px; font-weight: 600; }
+.tvb-logo { display: flex; align-items: center; }
+.tvb-flight { font-family: 'JetBrains Mono', 'Noto Sans Telugu', monospace; font-size: 29px; font-weight: 700; white-space: nowrap; }
 .tvb-city { display: flex; align-items: baseline; gap: 14px; min-width: 0; font-size: 42px; white-space: nowrap; overflow: hidden; }
 .tvb-city small { font-size: 22px; color: var(--tv-blue); letter-spacing: .02em; }
 .tvb-gate { font-size: 42px; color: var(--tv-yellow); display: flex; align-items: baseline; gap: 6px; }
@@ -210,7 +211,7 @@
 .tvq-list.intl { border-color: var(--tv-orange); }
 .tvq-banner { padding: 12px 24px; background: var(--tv-yellow); color: #0B1033; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 700; font-size: 40px; text-transform: uppercase; }
 .tvq-list.intl .tvq-banner { background: var(--tv-orange); }
-.tvq-row { display: grid; grid-template-columns: 130px 52px 150px 1fr auto; align-items: center; gap: 14px; margin: 10px 14px 0; padding: 10px 16px; border-radius: 12px; background: #141B48; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 700; font-size: 40px; }
+.tvq-row { display: grid; grid-template-columns: 116px 100px 150px 1fr auto; align-items: center; gap: 14px; margin: 10px 14px 0; padding: 10px 16px; border-radius: 12px; background: #141B48; font-family: 'Barlow Condensed', 'Noto Sans Telugu', sans-serif; font-weight: 700; font-size: 40px; }
 .tvq-row .mono { font-family: 'JetBrains Mono', 'Noto Sans Telugu', monospace; font-size: 26px; font-weight: 600; }
 .tvq-row em { font-style: normal; color: var(--tv-yellow); }
 .tvq-list p { margin: 14px 24px; font-size: 26px; color: var(--tv-dim); }

@@ -1,20 +1,19 @@
 // HYD Live — 1920×1080 broadcast screen for YouTube Live (via OBS).
 // No interaction: scenes rotate on a timer, urgent alerts jump the queue.
 // Each scene is shown in English for the first half of its time, then in Telugu.
-// URL options: #/tv?rotate=16 (seconds per board page) &refresh=15 (minutes between schedule calls)
+// URL options: #/tv?rotate=12 (seconds per board page) &refresh=15 (minutes between schedule calls)
 //              &lang=both|en|te (default both: alternate English and Telugu)
 //              &only=weather (pin one scene: dep | arr | delays | weather | info | quiet | breaking)
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useApp, useNow } from '../lib/store.jsx';
-import { useSceneRotation, URGENT } from '../lib/rotation.js';
+import { useSceneRotation, URGENT, DUR } from '../lib/rotation.js';
 import { useBroadcastData, remarkOf, estOf, alertText } from '../lib/broadcast.js';
 import { effTime } from '../lib/flights.js';
 import { wmo } from '../lib/weather.js';
 import { hhmm } from '../lib/util.js';
 import { LangCtx, useLang, tr, placeName, routeText, pageLabel, windLine, windSub, dateLabel, weekdayLabel } from '../lib/i18n.js';
-import { AirlineBadge } from '../components/UI.jsx';
 import WeatherIcon from '../components/WeatherIcon.jsx';
-import { WindCompass, QrCode, phoneUrl } from '../components/Broadcast.jsx';
+import { WindCompass, QrCode, phoneUrl, AirlineLogo } from '../components/Broadcast.jsx';
 import { ITakeoff, ILanding, IBell, IBolt } from '../components/Icons.jsx';
 import './tv.css';
 
@@ -37,25 +36,25 @@ const pagesFor = (dom, intl) => Math.min(MAX_PAGES, Math.max(1, Math.ceil(dom.le
 function buildCycle(d, n, rot, only) {
   if (only) return pinned(d, n, rot, only);
   const s = [];
-  if (d.quiet) s.push({ type: 'quiet', dur: 18 });
+  if (d.quiet) s.push({ type: 'quiet', dur: DUR.quiet });
   else {
     const p = pagesFor(d.deps.dom, d.deps.intl);
     for (let i = 0; i < p; i++) s.push({ type: 'dep', page: i, pages: p, dur: rot });
   }
   const pa = pagesFor(d.arrs.dom, d.arrs.intl);
   for (let i = 0; i < pa; i++) s.push({ type: 'arr', page: i, pages: pa, dur: rot });
-  s.push({ type: 'delays', round: n, dur: 18 });
+  s.push({ type: 'delays', round: n, dur: DUR.delays });
   const urgent = d.alerts.filter((a) => URGENT.has(a.kind));
-  if (urgent.length) s.push({ type: 'breaking', alertId: urgent[n % urgent.length].id, dur: 12 });
-  s.push({ type: 'weather', dur: 18 }, { type: 'info', dur: 18 });
+  if (urgent.length) s.push({ type: 'breaking', alertId: urgent[n % urgent.length].id, dur: DUR.breaking });
+  s.push({ type: 'weather', dur: DUR.weather }, { type: 'info', dur: DUR.info });
   return s.map((x, i) => ({ ...x, key: `${n}-${i}` }));
 }
 
 function pinned(d, n, rot, only) {
-  if (only === 'quiet') return [{ type: 'quiet', dur: 18, key: `${n}-q` }];
+  if (only === 'quiet') return [{ type: 'quiet', dur: DUR.quiet, key: `${n}-q` }];
   if (only === 'breaking') {
     const a = d.alerts.find((x) => URGENT.has(x.kind));
-    return [a ? { type: 'breaking', alertId: a.id, dur: 12, key: `${n}-b` } : { type: 'delays', round: n, dur: 12, key: `${n}-b` }];
+    return [a ? { type: 'breaking', alertId: a.id, dur: DUR.breaking, key: `${n}-b` } : { type: 'delays', round: n, dur: DUR.delays, key: `${n}-b` }];
   }
   const all = buildCycle({ ...d, quiet: false }, n, rot).filter((x) => x.type === only);
   return all.length ? all : buildCycle(d, n, rot);
@@ -66,7 +65,7 @@ export default function TvApp({ query }) {
   const now = useNow(1000);
   const d = useBroadcastData(now);
   const scale = useStageScale();
-  const rot = Math.max(6, Number(query.rotate) || 16);
+  const rot = Math.max(6, Number(query.rotate) || DUR.board);
   const langMode = ['en', 'te'].includes(query.lang) ? query.lang : 'both';
 
   // Optional per-stream refresh interval (persisted for this browser only)
@@ -180,7 +179,7 @@ function Board({ kind, dir, rows, per, page }) {
         <em>{pageLabel(p + 1, pages, lang)}</em>
       </div>
       <div className="tvb-head">
-        <span>{t('Scheduled')}</span><span>{t('Estimated')}</span><span>{t('Flight')}</span><span>{t(dir === 'dep' ? 'Destination' : 'From')}</span>
+        <span>{t('Scheduled')}</span><span>{t('Estimated')}</span><span>{t('Airline')}</span><span>{t('Flight')}</span><span>{t(dir === 'dep' ? 'Destination' : 'From')}</span>
         <span>{t(dir === 'dep' ? 'Gate' : 'Belt · gate')}</span><span>{t('Status')}</span>
       </div>
       {shown.map((f) => <BoardRow key={f.id} f={f} dir={dir} />)}
@@ -193,12 +192,12 @@ function BoardRow({ f, dir }) {
   const lang = useLang();
   const r = remarkOf(f);
   const e = estOf(f);
-  const num = f.number.split(' ').slice(1).join(' ');
   return (
     <div className={'tvb-row' + (f.status === 'departed' ? ' done' : '')}>
       <span className="tvb-time">{hhmm(f.sched)}</span>
       <span className={'tvb-time est ' + e.c}>{e.t}</span>
-      <span className="tvb-flight"><AirlineBadge airline={f.airline} size={40} /><b>{num}</b></span>
+      <span className="tvb-logo"><AirlineLogo airline={f.airline} h={46} /></span>
+      <span className="tvb-flight">{f.number}</span>
       <span className="tvb-city">{lang === 'te' ? placeName(f, lang) : placeName(f, lang).toUpperCase()}{f.aircraft && <small>{f.aircraft.short.toUpperCase()}</small>}</span>
       <GateCell f={f} dir={dir} />
       <span className={`tvb-rem c-${r.c}${r.pill ? ' is-pill' : ''}${r.blink ? ' blink' : ''}`}>{tr(r.t, lang)}</span>
@@ -262,7 +261,7 @@ function DisruptionCard({ f }) {
   return (
     <div className={'tvd-card' + (cancelled || diverted ? ' red' : '')}>
       <div className="tvd-top">
-        <AirlineBadge airline={f.airline} size={46} />
+        <AirlineLogo airline={f.airline} h={44} />
         <div><b>{te ? placeName(f, lang) : placeName(f, lang).toUpperCase()}</b><span>{f.number} · {tr(f.dir === 'dep' ? 'Departure' : 'Arrival', lang)}</span></div>
         <em className={f.intl ? 'intl' : ''}>{tr(f.intl ? 'INTL' : 'DOM', lang)}</em>
       </div>
@@ -397,7 +396,7 @@ function BreakingScene({ alert: a, dur, elapsed }) {
           <span className="tvbk-scope"><em>{t(f.intl ? 'INTERNATIONAL' : 'DOMESTIC')}</em>{t('BREAKING')}</span>
         </div>
         <div className="tvbk-main">
-          <AirlineBadge airline={f.airline} size={96} />
+          <AirlineLogo airline={f.airline} h={84} />
           <div>
             <h2>{routeText(f, lang)}</h2>
             <p>{a.kind === 'gate' ? (te ? `గతంలో గేట్ ${a.prevGate}` : `Was Gate ${a.prevGate}`) : `${t('Scheduled')} ${hhmm(f.sched)}`}{f.aircraft ? ` · ${f.aircraft.short.toUpperCase()}` : ''}</p>
@@ -451,7 +450,7 @@ function QuietList({ title, kind, list, foot }) {
       <div className="tvq-banner">{title}</div>
       {list.map((f) => (
         <div key={f.id} className="tvq-row">
-          <b>{hhmm(effTime(f))}</b><AirlineBadge airline={f.airline} size={40} /><span className="mono">{f.number}</span>
+          <b>{hhmm(effTime(f))}</b><AirlineLogo airline={f.airline} h={38} /><span className="mono">{f.number}</span>
           <strong>{lang === 'te' ? placeName(f, lang) : placeName(f, lang).toUpperCase()}</strong><em>{f.gate ? 'G' + f.gate : 'TBA'}</em>
         </div>
       ))}

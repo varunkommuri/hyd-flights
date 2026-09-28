@@ -6,7 +6,11 @@ import { useEffect, useRef, useState } from 'react';
 
 export const URGENT = new Set(['cancelled', 'diverted', 'gate']);
 
-export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur = 12, resetKey } = {}) {
+// Seconds each scene stays up (half English, half Telugu). Flight boards need the most reading
+// time; alerts, weather and info are quick to take in.
+export const DUR = { board: 12, delays: 10, quiet: 10, breaking: 8, weather: 8, info: 8 };
+
+export function useSceneRotation(d, build, now, { langMode = 'both', breakingDur = DUR.breaking, resetKey } = {}) {
   const buildRef = useRef(build);
   buildRef.current = build;
   const dRef = useRef(d);
