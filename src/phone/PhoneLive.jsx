@@ -72,7 +72,7 @@ export default function PhoneLive({ query = {} }) {
   const d = useBroadcastData(now);
   const [areaRef, h] = useAreaHeight();
   const per = { h: h || 460 };
-  const { scene, seq, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
+  const { scene, next, elapsed, left, lang, breakingAlert } = useSceneRotation(d, (dd, n) => buildCycle(dd, n, per, query.only), now, {
     langMode: ['en', 'te'].includes(query.lang) ? query.lang : 'both',
   });
 
@@ -95,7 +95,7 @@ export default function PhoneLive({ query = {} }) {
         <Head now={now} weather={weather} />
         <SceneBar scene={scene} next={next} left={left} />
         <InfoBar alerts={d.alerts} quiet={d.quiet} style={query.bar === 'flip' ? 'flip' : 'slide'}
-          seq={seq} phase={scene.key + lang} phaseMs={(query.lang === 'en' || query.lang === 'te' ? scene.dur : scene.dur / 2) * 1000} />
+          langMode={['en', 'te'].includes(query.lang) ? query.lang : 'both'} />
         <main className="pl-main" ref={areaRef}>
           <div className="pl-scene" key={scene.key + lang}>{body}</div>
         </main>
@@ -152,32 +152,45 @@ function SceneBar({ scene, next, left }) {
 }
 
 // ---------- alerts + news bar ----------
-// One item at a time — every current alert, then the news and travel tips — in step with the
-// scenes: each scene shows the next item, in English for the first half and the same item in
-// Telugu for the second, flipping together with the rest of the screen. style 'slide': the item
-// slides up into place; 'flip': it flips in like a split-flap board.
-function InfoBar({ alerts, quiet, style, seq, phase, phaseMs }) {
-  const lang = useLang();
+// One item at a time: every current alert, then two travel tips (a different pair each round).
+// Each item shows in English for 3 s and then straight away in Telugu for 3 s, so an alert's two
+// languages always appear together. style 'slide': the item slides up into place; 'flip': it
+// flips in like a split-flap board.
+const STEP_MS = 3000, TIPS_PER_ROUND = 2;
+function InfoBar({ alerts, quiet, style, langMode }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep((x) => x + 1), STEP_MS);
+    return () => clearInterval(id);
+  }, []);
+  const both = langMode === 'both';
+  const pos = both ? Math.floor(step / 2) : step; // which item, counting across rounds
+  const lang = both ? (step % 2 ? 'te' : 'en') : langMode;
   const te = lang === 'te';
-  const items = [
+
+  const fixed = [
     ...alerts.map((a) => ({ key: a.id, kind: a.kind, tag: a.tag, ...alertText(a, lang) })),
     ...(alerts.length ? [] : [{ key: 'clear', kind: 'clear', tag: 'ALL CLEAR', title: te ? 'తదుపరి 3 గంటల్లో అంతరాయాలు లేవు' : 'No disruptions in the next 3 hours' }]),
     ...(quiet ? [{ key: 'quiet', kind: 'news', tag: 'INFO', title: te ? 'నిశ్శబ్ద సమయం — 05:00 నుండి మళ్లీ విమానాలు' : 'Quiet hours — the board fills up again from 05:00' }] : []),
-    ...TIPS.map((tip, k) => ({ key: 'tip' + k, kind: 'news', tag: tip.tag, title: te ? tip.te : tip.en })),
   ];
-  const idx = seq % items.length;
-  const it = items[idx];
+  const perRound = fixed.length + TIPS_PER_ROUND;
+  const round = Math.floor(pos / perRound), idx = pos % perRound;
+  const tipAt = (k) => { const n = (round * TIPS_PER_ROUND + k) % TIPS.length; const tip = TIPS[n]; return { key: 'tip' + n, kind: 'news', tag: tip.tag, title: te ? tip.te : tip.en }; };
+  const it = idx < fixed.length ? fixed[idx] : tipAt(idx - fixed.length);
+
   return (
-    <div className={`pl-strip k-${it.kind} bar-${style}`}>
-      <span className="pls-bell"><IBell size={18} sw={2.2} />{alerts.length > 0 && <i>{alerts.length}</i>}</span>
-      <span className="pls-tag" key={'t' + it.key + lang}>{tr(it.tag, lang)}</span>
-      <div className={'pls-text' + (it.sub ? '' : ' one')} key={it.key + lang}>
-        <b>{style === 'flip' ? <FlipText text={it.title} te={te} /> : it.title}</b>
-        {it.sub && <span>{it.sub}</span>}
+    <LangCtx.Provider value={lang}>
+      <div className={`pl-strip k-${it.kind} bar-${style}`} lang={lang}>
+        <span className="pls-bell"><IBell size={18} sw={2.2} />{alerts.length > 0 && <i>{alerts.length}</i>}</span>
+        <span className="pls-tag" key={'t' + it.key + lang}>{tr(it.tag, lang)}</span>
+        <div className={'pls-text' + (it.sub ? '' : ' one')} key={it.key + lang}>
+          <b>{style === 'flip' ? <FlipText text={it.title} te={te} /> : it.title}</b>
+          {it.sub && <span>{it.sub}</span>}
+        </div>
+        <em>{idx + 1}/{perRound}</em>
+        <span className="pls-prog"><i key={step} style={{ animationDuration: STEP_MS + 'ms' }} /></span>
       </div>
-      <em>{idx + 1}/{items.length}</em>
-      <span className="pls-prog"><i key={phase} style={{ animationDuration: phaseMs + 'ms' }} /></span>
-    </div>
+    </LangCtx.Provider>
   );
 }
 
