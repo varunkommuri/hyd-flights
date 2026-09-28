@@ -62,6 +62,7 @@ const TE = {
   'Scheduled': 'నిర్ణీత సమయం',
   'Estimated': 'అంచనా సమయం',
   'Flight': 'విమానం',
+  'Airline': 'విమానయాన సంస్థ',
   'Destination': 'గమ్యం',
   'From': 'ఎక్కడి నుండి',
   'Belt · gate': 'బెల్ట్ · గేట్',

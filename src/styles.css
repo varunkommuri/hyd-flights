@@ -806,3 +806,10 @@ a { color: var(--blue); }
 [data-theme="light"] .wx-icon { filter: drop-shadow(0 2px 4px rgba(30,50,120,.28)); }
 [data-theme="light"] .map-chips .chip,
 [data-theme="light"] .map-search-row .search { background: rgba(255,255,255,.94); }
+
+/* ===== wide airline logo tile (broadcast + phone) ===== */
+.al-wide { position: relative; display: inline-grid; place-items: center; flex: none; overflow: hidden; border-radius: 7px; background: var(--al); color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: .02em; }
+.al-wide img { position: absolute; inset: 8% 6%; width: 88%; height: 84%; object-fit: contain; opacity: 0; transition: opacity .25s; }
+.al-wide.is-loaded { background: #fff; }
+.al-wide.is-loaded img { opacity: 1; }
+.al-wide.is-loaded .al-wide-code { opacity: 0; }

@@ -1,5 +1,5 @@
 // Visual pieces shared by the TV broadcast and the phone app
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import qrcode from 'qrcode-generator';
 
 // Wind arrow (points where the wind blows TO) over the runway in use
@@ -44,3 +44,27 @@ export function QrCode({ text, size = 200 }) {
 
 // Where the phone version of this site lives (forced, so a tablet in landscape still gets it)
 export const phoneUrl = () => `${location.origin}${location.pathname}#/mobile`;
+
+// Wide airline logo on a white tile, as on airport screens. Uses the rectangular
+// pics.avs.io logo, then a square fallback, then a coloured tile with the airline code.
+const WIDE_SOURCES = [
+  (c) => `https://pics.avs.io/300/100/${c}.png`,
+  (c) => `https://images.kiwi.com/airlines/128/${c}.png`,
+];
+const wideMiss = new Map(); // iata -> sources that failed, shared across tiles
+export function AirlineLogo({ airline, h = 36 }) {
+  const code = airline.iata;
+  const [idx, setIdx] = useState(() => wideMiss.get(code) || 0);
+  const [loaded, setLoaded] = useState(false);
+  const src = /^[A-Z0-9]{2}$/.test(code || '') && idx < WIDE_SOURCES.length ? WIDE_SOURCES[idx](code) : null;
+  const fail = () => { wideMiss.set(code, idx + 1); setIdx(idx + 1); setLoaded(false); };
+  return (
+    <span className={'al-wide' + (loaded ? ' is-loaded' : '')} style={{ '--al': airline.color, height: h, width: Math.round(h * 2.6), fontSize: h * 0.42 }} title={airline.name}>
+      <span className="al-wide-code">{code}</span>
+      {src && (
+        <img key={src} src={src} alt={airline.name} decoding="async" draggable="false"
+          onLoad={(e) => (e.currentTarget.naturalWidth > 8 ? setLoaded(true) : fail())} onError={fail} />
+      )}
+    </span>
+  );
+}

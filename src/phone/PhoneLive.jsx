@@ -4,21 +4,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useApp, useNow } from '../lib/store.jsx';
 import { useBroadcastData, remarkOf, estOf, alertText } from '../lib/broadcast.js';
-import { useSceneRotation, URGENT } from '../lib/rotation.js';
+import { useSceneRotation, URGENT, DUR } from '../lib/rotation.js';
 import { effTime } from '../lib/flights.js';
 import { wmo } from '../lib/weather.js';
 import { hhmm } from '../lib/util.js';
 import { LangCtx, useLang, tr, placeName, routeText, windLine, windSub, dateLabel, weekdayLabel } from '../lib/i18n.js';
-import { AirlineBadge } from '../components/UI.jsx';
 import WeatherIcon from '../components/WeatherIcon.jsx';
-import { WindCompass } from '../components/Broadcast.jsx';
+import { WindCompass, AirlineLogo } from '../components/Broadcast.jsx';
 import { ITakeoff, ILanding, IBolt } from '../components/Icons.jsx';
 import './live.css';
 
 // Sizes (px) used to work out how much fits — keep in sync with live.css
 const ROW_H = 56, HEAD_H = 24, CARD_H = 64, CARD_GAP = 8, STATS_H = 58;
 const SCENE_PAD = 16 + 3; // scene padding + board border
-const PAGE_S = 16; // seconds per page: 8 English + 8 Telugu
 const BOARD_CAP = { dom: 3, intl: 2 };
 
 const BOARDS = [
@@ -28,7 +26,7 @@ const BOARDS = [
 
 // only (preview): pin one scene type — board | delays | breaking | weather | info | quiet
 function buildCycle(d, n, per, only) {
-  if (only === 'quiet') return [{ type: 'quiet', dur: PAGE_S, key: `${n}-q` }];
+  if (only === 'quiet') return [{ type: 'quiet', dur: DUR.quiet, key: `${n}-q` }];
   if (only) {
     const pinned = buildCycle({ ...d, quiet: false }, n, per).filter((x) => x.type === only);
     if (pinned.length) return pinned;
@@ -36,16 +34,16 @@ function buildCycle(d, n, per, only) {
   const s = [];
   const rows = Math.max(3, Math.floor((per.h - SCENE_PAD - HEAD_H) / ROW_H));
   for (const b of BOARDS) {
-    if (b.dir === 'dep' && d.quiet) { if (b.kind === 'dom') s.push({ type: 'quiet', dur: PAGE_S }); continue; }
+    if (b.dir === 'dep' && d.quiet) { if (b.kind === 'dom') s.push({ type: 'quiet', dur: DUR.quiet }); continue; }
     const list = (b.dir === 'dep' ? d.deps : d.arrs)[b.kind];
     if (!list.length && b.kind === 'intl') continue;
     const pages = Math.min(BOARD_CAP[b.kind], Math.max(1, Math.ceil(list.length / rows)));
-    for (let i = 0; i < pages; i++) s.push({ ...b, page: i, pages, rows, dur: PAGE_S });
+    for (let i = 0; i < pages; i++) s.push({ ...b, page: i, pages, rows, dur: DUR.board });
   }
-  s.push({ type: 'delays', round: n, dur: PAGE_S });
+  s.push({ type: 'delays', round: n, dur: DUR.delays });
   const urgent = d.alerts.filter((a) => URGENT.has(a.kind));
-  if (urgent.length) s.push({ type: 'breaking', alertId: urgent[n % urgent.length].id, dur: 12 });
-  s.push({ type: 'weather', dur: PAGE_S }, { type: 'info', dur: PAGE_S });
+  if (urgent.length) s.push({ type: 'breaking', alertId: urgent[n % urgent.length].id, dur: DUR.breaking });
+  s.push({ type: 'weather', dur: DUR.weather }, { type: 'info', dur: DUR.info });
   return s.map((x, i) => ({ ...x, key: `${n}-${i}` }));
 }
 
@@ -200,7 +198,8 @@ function BoardScene({ scene, list }) {
     <div className={'pl-board ' + scene.kind}>
       <div className="plb-head">
         <span>{t('Sched')} / {t('Est')}</span>
-        <span>{t(scene.dir === 'dep' ? 'Flight · destination' : 'Flight · from')}</span>
+        <span>{t('Flight')}</span>
+        <span>{t(scene.dir === 'dep' ? 'Destination' : 'From')}</span>
         <span>{t(scene.dir === 'dep' ? 'Gate' : 'Belt')}</span>
       </div>
       {shown.map((f) => <Row key={f.id} f={f} dir={scene.dir} />)}
@@ -217,9 +216,10 @@ function Row({ f, dir }) {
   return (
     <div className={'pl-row' + (f.status === 'departed' ? ' done' : '')}>
       <span className="plr-time"><b>{hhmm(f.sched)}</b><span className={e.c}>{e.t}</span></span>
+      <span className="plr-air"><AirlineLogo airline={f.airline} h={24} /><b>{f.number}</b></span>
       <span className="plr-main">
         <b className="plr-city">{lang === 'te' ? placeName(f, lang) : placeName(f, lang).toUpperCase()}</b>
-        <span className="plr-fl"><AirlineBadge airline={f.airline} size={18} /><span>{f.number}</span>{f.aircraft && <small>{f.aircraft.short.toUpperCase()}</small>}</span>
+        {f.aircraft && <small>{f.aircraft.short.toUpperCase()}</small>}
       </span>
       <span className="plr-right">
         <b className={'plr-gate' + (where ? '' : ' tba')}>{where || 'TBA'}{dir === 'arr' && f.gate && <small>G{f.gate}</small>}</b>
@@ -262,7 +262,7 @@ function DelaysScene({ dis, round, h, now }) {
           : f.dir === 'dep' ? (f.gate ? `${te ? 'గేట్' : 'Gate'} ${f.gate}` : '') : (f.belt ? `${te ? 'బెల్ట్' : 'Belt'} ${f.belt}` : '');
         return (
           <div key={f.id} className={'pld-card' + (off ? ' red' : '')}>
-            <AirlineBadge airline={f.airline} size={32} />
+            <AirlineLogo airline={f.airline} h={28} />
             <div className="pld-mid">
               <b>{te ? placeName(f, lang) : placeName(f, lang).toUpperCase()} <em className={f.intl ? 'intl' : ''}>{t(f.intl ? 'INTL' : 'DOM')}</em></b>
               <span>{f.number} · {t(f.dir === 'dep' ? 'Departure' : 'Arrival')}{note && ` · ${note}`}</span>
@@ -297,7 +297,7 @@ function BreakingScene({ alert: a, dur, elapsed }) {
         <span className="plk-scope">{t(f.intl ? 'INTERNATIONAL' : 'DOMESTIC')}</span>
       </div>
       <div className="plk-flight">
-        <AirlineBadge airline={f.airline} size={56} />
+        <AirlineLogo airline={f.airline} h={44} />
         <div>
           <h2>{routeText(f, lang)}</h2>
           <p>{a.kind === 'gate' ? (te ? `గతంలో గేట్ ${a.prevGate}` : `Was Gate ${a.prevGate}`) : `${t('Scheduled')} ${hhmm(f.sched)}`}{f.aircraft ? ` · ${f.aircraft.short.toUpperCase()}` : ''}</p>

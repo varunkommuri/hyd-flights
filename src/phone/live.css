@@ -74,7 +74,7 @@
 /* ---- boards ---- */
 .pl-board { flex: none; border-radius: 14px; overflow: hidden; background: var(--card); border: 1.5px solid var(--yellow); }
 .pl-board.intl { border-color: var(--orange); }
-.plb-head, .pl-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 0 10px; }
+.plb-head, .pl-row { display: grid; grid-template-columns: 46px 64px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 0 10px; }
 .plb-head { height: 24px; font-family: var(--cond); font-weight: 700; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--dim); background: #0A0F2E; }
 .pl-root[lang="te"] .plb-head { font-size: 10.5px; text-transform: none; }
 .plb-head span:last-child { text-align: right; }
@@ -82,20 +82,20 @@
 .pl-row:nth-child(even) { background: #111846; }
 .pl-row.done { opacity: .5; }
 .plr-time { display: flex; flex-direction: column; font-family: var(--cond); font-weight: 700; line-height: 1.05; }
-.plr-time b { font-size: 21px; }
+.plr-time b { font-size: 20px; }
 .plr-time span { font-size: 15px; }
 .plr-time .dim { color: #8E98C6; } .plr-time .late { color: var(--amber); } .plr-time .early { color: var(--green); }
-.plr-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.plr-air { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.plr-air > b { font-family: var(--mono); font-size: 11.5px; font-weight: 700; white-space: nowrap; color: #E6EAFA; }
+.plr-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plr-main > small { font-family: var(--cond); font-weight: 700; font-size: 11.5px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plr-city { font-family: var(--cond); font-weight: 700; font-size: 20px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-root[lang="te"] .plr-city { font-family: 'Noto Sans Telugu', sans-serif; font-size: 16px; line-height: 1.2; }
-.plr-fl { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 12px; color: #D4D9F0; white-space: nowrap; overflow: hidden; }
-.plr-fl .al-badge { border-radius: 5px; box-shadow: none; font-size: 7px !important; }
-.plr-fl small { font-family: var(--cond); font-weight: 700; font-size: 11.5px; color: var(--blue); }
-.plr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; max-width: 118px; }
+.plr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; max-width: 96px; }
 .plr-gate { display: flex; align-items: baseline; gap: 4px; font-family: var(--cond); font-weight: 700; font-size: 22px; line-height: 1; color: var(--yellow); }
 .plr-gate small { font-size: 12px; color: var(--dim); }
 .plr-gate.tba { font-size: 15px; color: var(--mute); }
-.plr-rem { font-family: var(--cond); font-weight: 700; font-size: 13px; line-height: 1.2; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 118px; }
+.plr-rem { font-family: var(--cond); font-weight: 700; font-size: 13px; line-height: 1.2; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
 .pl-root[lang="te"] .plr-rem { font-family: 'Noto Sans Telugu', sans-serif; font-size: 11.5px; }
 .plr-rem.pill { padding: 0 6px; border-radius: 5px; }
 .plr-rem.c-green { color: var(--green); } .plr-rem.c-white { color: #C9D0EE; } .plr-rem.c-grey { color: var(--mute); }
@@ -117,7 +117,7 @@
 .pld-stats .r { background: var(--red); border-color: transparent; }
 .pld-card { flex: none; display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 12px; border-radius: 12px; background: var(--card); border: 1.5px solid #6B5220; }
 .pld-card.red { border-color: var(--red); background: #1F1233; }
-.pld-card .al-badge { border-radius: 8px; box-shadow: none; }
+
 .pld-mid { flex: 1; min-width: 0; line-height: 1.2; }
 .pld-mid b { display: flex; align-items: center; gap: 6px; font-family: var(--cond); font-size: 19px; white-space: nowrap; overflow: hidden; }
 .pl-root[lang="te"] .pld-mid b { font-family: 'Noto Sans Telugu', sans-serif; font-size: 15px; }
@@ -145,7 +145,7 @@
 .k-gate .plk-tag { background: var(--yellow); color: #1B1100; }
 .plk-scope { font-family: var(--cond); font-weight: 700; font-size: 14px; padding: 2px 8px; border-radius: 6px; background: var(--yellow); color: #1B1100; }
 .plk-flight { display: flex; align-items: center; gap: 14px; margin-top: auto; }
-.plk-flight .al-badge { border-radius: 12px; flex: none; }
+.plk-flight { flex-wrap: wrap; }
 .plk-flight h2 { margin: 0; font-family: var(--disp); font-size: 28px; line-height: 1.1; }
 .pl-root[lang="te"] .plk-flight h2 { font-size: 24px; }
 .plk-flight p { margin: 4px 0 0; font-size: 14px; color: #D4D9F0; }

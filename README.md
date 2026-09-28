@@ -35,7 +35,7 @@ URL options (add after `#/tv?`, joined with `&`):
 
 | Option | What it does | Example |
 |---|---|---|
-| `rotate` | Seconds each board page stays up, half English and half Telugu (default 16) | `rotate=20` |
+| `rotate` | Seconds each board page stays up, half English and half Telugu (default 12; delays 10 s, breaking alerts, weather and info 8 s) | `rotate=16` |
 | `lang` | `both` (default) alternates English and Telugu; `en` or `te` shows one language only | `lang=te` |
 | `refresh` | Minutes between flight-schedule API calls on this machine | `refresh=30` |
 | `only` | Pin one scene, handy for previews: `dep`, `arr`, `delays`, `weather`, `info`, `quiet`, `breaking` | `only=weather` |
