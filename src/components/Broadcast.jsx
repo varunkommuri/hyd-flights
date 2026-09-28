@@ -42,5 +42,5 @@ export function QrCode({ text, size = 200 }) {
   );
 }
 
-// Where the phone version of this site lives (same host, home route)
-export const phoneUrl = () => `${location.origin}${location.pathname}#/`;
+// Where the phone version of this site lives (forced, so a tablet in landscape still gets it)
+export const phoneUrl = () => `${location.origin}${location.pathname}#/mobile`;
