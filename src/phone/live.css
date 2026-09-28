@@ -242,7 +242,13 @@
 @keyframes plSlideUp { from { opacity: 0; transform: translateY(26px); } }
 /* flip: split-flap reveal */
 .bar-flip .pls-text { animation: none; }
+.bar-flip .pls-text b { text-transform: uppercase; letter-spacing: .02em; }
 .bar-flip .pls-tag { animation: plFlapIn .35s ease-out; transform-origin: 50% 0; }
-.flip-latin { font-variant-numeric: tabular-nums; }
-.flip-word { display: inline-block; white-space: pre; transform-origin: 50% 0; animation: plFlapIn .4s ease-out backwards; }
+.flap-ch { display: inline-block; min-width: .68em; margin: 0 1px; padding: 0 1px; border-radius: 3px; text-align: center; line-height: 1.15; color: var(--yellow);
+  background: linear-gradient(180deg, #0A0E2A 0 48%, #000 48% 52%, #0A0E2A 52% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  animation: plFlapIn .12s ease-out; }
+.flap-word { display: inline-block; margin-right: .3em; padding: 0 4px; border-radius: 4px; transform-origin: 50% 0;
+  background: linear-gradient(180deg, #0A0E2A 0 48%, #000 48% 52%, #0A0E2A 52% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  color: var(--yellow); animation: plFlapIn .35s ease-out backwards; transition: background .3s, box-shadow .3s, color .3s; }
+.flap-word.done { background: transparent; box-shadow: none; color: inherit; }
 @keyframes plFlapIn { from { opacity: 0; transform: perspective(200px) rotateX(-90deg); } }
