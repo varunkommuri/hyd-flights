@@ -49,12 +49,12 @@
 .plb-prog small { flex: none; font-size: 11px; font-weight: 600; opacity: .8; white-space: nowrap; }
 
 /* ---- alert strip ---- */
-.pl-strip { flex: none; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; background: #1D1E36; border-bottom: 1px solid var(--line); }
+.pl-strip { position: relative; overflow: hidden; flex: none; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 12px; background: #1D1E36; border-bottom: 1px solid var(--line); }
 .pls-tag { flex: none; padding: 2px 7px; border-radius: 5px; background: var(--amber); color: #1B1100; font-family: var(--cond); font-weight: 700; font-size: 12.5px; letter-spacing: .03em; }
 .pls-text { flex: 1; min-width: 0; line-height: 1.15; animation: plFade .4s ease; }
 @keyframes plFade { from { opacity: 0; transform: translateY(4px); } }
 .pls-text b { display: block; font-family: var(--cond); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pls-text span { display: block; font-size: 11.5px; color: #D4D9F0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pls-text > span { display: block; font-size: 11.5px; color: #D4D9F0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-root[lang="te"] .pls-text b { font-size: 14px; }
 .pl-strip > em { flex: none; font-style: normal; font-size: 11px; font-weight: 700; color: var(--dim); }
 .pl-strip > b { font-size: 13.5px; font-weight: 600; }
@@ -215,21 +215,11 @@
 .plq-hero > span { font-size: 12.5px; color: var(--dim); }
 .plq-stale { margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: #3A2A0B; color: var(--amber); font-size: 12px; font-weight: 700; }
 
-/* ---- ticker ---- */
-.pl-ticker { flex: none; display: flex; height: 32px; background: var(--head); border-top: 1px solid var(--line); }
-.plt-label { flex: none; display: flex; align-items: center; padding: 0 10px; background: var(--red); font-family: var(--cond); font-weight: 700; font-size: 14px; letter-spacing: .05em; text-transform: uppercase; z-index: 1; }
-.plt-rail { flex: 1; overflow: hidden; display: flex; align-items: center; }
-.plt-track { display: flex; white-space: nowrap; animation: plTick linear infinite; }
-@keyframes plTick { to { transform: translateX(-50%); } }
-.plt-seg { display: flex; flex: none; }
-.plt-item { display: inline-flex; align-items: center; gap: 7px; padding-left: 16px; font-size: 13px; font-weight: 600; }
-.plt-item em { font-style: normal; padding: 0 5px; border-radius: 4px; background: var(--amber); color: #1B1100; font-family: var(--cond); font-weight: 700; font-size: 11px; }
-
 /* Short screens (small phones in a browser with toolbars) */
 @media (max-height: 620px) {
   .pl-head { height: 48px; }
-  .pl-strip { height: 38px; }
-  .pls-text span { display: none; }
+  .pl-strip { height: 46px; }
+  .pls-text > span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-scene, .pls-text, .pl-breaking { animation: none; }
@@ -239,3 +229,20 @@
 .pl-strip > svg { flex: none; color: var(--dim); }
 .pls-bell { position: relative; flex: none; display: grid; color: #fff; }
 .pls-bell i { position: absolute; right: -7px; top: -7px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; background: var(--red); font-style: normal; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+
+/* ---- combined alerts + news bar ---- */
+.pl-strip.k-news { background: #151C4B; }
+.pl-strip.k-news .pls-tag { background: #fff; color: #0B1033; }
+.pls-text.one b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 15px; line-height: 1.15; }
+.pl-root[lang="te"] .pls-text.one b { font-size: 13px; }
+.pls-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.08); }
+.pls-prog i { display: block; height: 100%; background: rgba(255,255,255,.55); transform-origin: left; animation: plGrow linear forwards; }
+/* slide: each item rises into place */
+.bar-slide .pls-text, .bar-slide .pls-tag { animation: plSlideUp .45s cubic-bezier(.2,.8,.2,1); }
+@keyframes plSlideUp { from { opacity: 0; transform: translateY(26px); } }
+/* flip: split-flap reveal */
+.bar-flip .pls-text { animation: none; }
+.bar-flip .pls-tag { animation: plFlapIn .35s ease-out; transform-origin: 50% 0; }
+.flip-latin { font-variant-numeric: tabular-nums; }
+.flip-word { display: inline-block; white-space: pre; transform-origin: 50% 0; animation: plFlapIn .4s ease-out backwards; }
+@keyframes plFlapIn { from { opacity: 0; transform: perspective(200px) rotateX(-90deg); } }
